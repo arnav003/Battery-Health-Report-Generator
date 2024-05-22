@@ -34,11 +34,11 @@ def extract_battery_report(file_path, header_text):
             details[label] = value
 
     # Print the extracted details
-    if details:
-        for key, value in details.items():
-            print(f"{key}: {value}")
-    else:
-        print("No details found.")
+    # if details:
+    #     for key, value in details.items():
+    #         print(f"{key}: {value}")
+    # else:
+    #     print("No details found.")
 
     # Save data to JSON file
     output_json = "data/battery-report.json"
@@ -77,10 +77,10 @@ def extract_installed_batteries(file_path, header_text):
             details[label] = value
 
     # Print the extracted details
-    for key, value in details.items():
-        print(f"{key}: {value}")
-    else:
-        print("No rows found.")
+    # for key, value in details.items():
+    #     print(f"{key}: {value}")
+    # else:
+    #     print("No rows found.")
 
     # Save data to JSON file
     output_json = "data/installed-batteries.json"
@@ -125,8 +125,8 @@ def extract_usage(file_path, header_text):
         data.append(dict(zip(headers, cell_data)))
 
     # Print the extracted details
-    for entry in data:
-        print(entry)
+    # for entry in data:
+    #     print(entry)
 
     # Save data to JSON file
     output_json = "data/" + header_text.split(' ')[0].lower() + "-usage.json"
@@ -169,8 +169,8 @@ def extract_usage_history(file_path, header_text):
         data.append(cell_data)
 
     # Print the extracted details
-    for entry in data:
-        print(dict(zip(headers, entry)))
+    # for entry in data:
+    #     print(dict(zip(headers, entry)))
 
     # Save data to JSON file
     output_json = "data/usage-history.json"
@@ -213,8 +213,8 @@ def extract_battery_capacity_history(file_path, header_text):
         data.append(cell_data)
 
     # Print the extracted details
-    for entry in data:
-        print(dict(zip(headers, entry)))
+    # for entry in data:
+    #     print(dict(zip(headers, entry)))
 
     # Save data to JSON file
     output_json = "data/battery-capacity-history.json"
@@ -257,10 +257,10 @@ def extract_battery_life_estimates(file_path, header_text):
         cell_data = [cell.get_text(strip=True) for cell in cells]
         data.append(cell_data)
 
-    # Print the extracted details
-    for entry in data:
-        # Merging the columns for easier display
-        print(dict(zip(headers, entry)))
+    # # Print the extracted details
+    # for entry in data:
+    #     # Merging the columns for easier display
+    #     print(dict(zip(headers, entry)))
 
     # Save data to JSON file
     output_json = "data/battery-life-estimates.json"
@@ -272,19 +272,19 @@ def extract_battery_life_estimates(file_path, header_text):
 
 def extract_data():
     file_path = 'cleaned_battery-report.html'
-    print('Battery report')
+    print('Extracting battery report')
     extract_battery_report(file_path, 'Battery report')
-    print('Installed batteries')
+    print('Extracting installed batteries')
     extract_installed_batteries(file_path, 'Installed batteries')
-    print('Recent usage')
+    print('Extracting recent usage')
     extract_usage(file_path, 'Recent usage')
-    print('Battery usage')
+    print('Extracting battery usage')
     extract_usage(file_path, 'Battery usage')
-    print('Usage history')
+    print('Extracting usage history')
     extract_usage_history(file_path, 'Usage history')
-    print('Battery capacity history')
+    print('Extracting battery capacity history')
     extract_battery_capacity_history(file_path, 'Battery capacity history')
-    print('Battery life estimates')
+    print('Extracting battery life estimates')
     extract_battery_life_estimates(file_path, 'Battery life estimates')
 
 

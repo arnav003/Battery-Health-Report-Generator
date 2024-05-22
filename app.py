@@ -6,11 +6,16 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QCo
 from PyQt6.QtCore import Qt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+
 from load_json import load_capacity_history_from_json
+from generate import generate_battery_report
+from clean import clean_html
+from extract import extract_data
 
 class BatteryApp(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.get_data()
         self.setWindowTitle('Battery Data Dashboard')
         self.setGeometry(100, 100, 800, 600)
 
@@ -41,6 +46,19 @@ class BatteryApp(QMainWindow):
         # Initial plot
         self.update_plot()
 
+    def get_data(self):
+        generate_battery_report()
+        clean_html()
+        self.create_directory("data")
+        extract_data()
+
+    def create_directory(self, directory_path):
+        try:
+            os.makedirs(directory_path)
+            print(f"Directory '{directory_path}' created successfully.")
+        except FileExistsError:
+            print(f"Directory '{directory_path}' already exists.")
+
     def load_json(self, file_name):
         with open(os.path.join(os.path.dirname(__file__), file_name), 'r', encoding='utf-8') as f:
             return json.load(f)
@@ -58,9 +76,10 @@ class BatteryApp(QMainWindow):
         self.canvas.draw()
 
     def plot_capacity_history(self):
-        # self.capacity_df['START DATE'] = pd.to_datetime(self.capacity_df['START DATE'])
-        self.capacity_df.set_index('START DATE', inplace=True)
-        self.capacity_df.plot(ax=self.ax, title='Battery Capacity History')
+        x_values = self.capacity_df['START DATE']
+        y_values = self.capacity_df['FULL CHARGE CAPACITY']
+        self.ax.plot(x_values, y_values)
+        self.ax.set_title('Battery Capacity History')
 
     # def plot_life_estimates(self):
     #     self.life_estimates_df['PERIOD'] = pd.to_datetime(self.life_estimates_df['PERIOD'])

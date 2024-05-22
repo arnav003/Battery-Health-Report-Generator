@@ -1,0 +1,416 @@
+[
+    {
+        "START TIME": "2024-05-1918:43:30",
+        "STATE": "Active",
+        "SOURCE": "AC",
+        "CAPACITY REMAINING": "97 %"
+    },
+    {
+        "START TIME": "19:34:51",
+        "STATE": "Active",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "100 %"
+    },
+    {
+        "START TIME": "19:59:03",
+        "STATE": "Connected standby",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "75 %"
+    },
+    {
+        "START TIME": "19:59:19",
+        "STATE": "Active",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "74 %"
+    },
+    {
+        "START TIME": "20:00:00",
+        "STATE": "Suspended",
+        "SOURCE": "",
+        "CAPACITY REMAINING": "73 %"
+    },
+    {
+        "START TIME": "2024-05-2000:30:12",
+        "STATE": "Active",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "72 %"
+    },
+    {
+        "START TIME": "00:31:32",
+        "STATE": "Connected standby",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "70 %"
+    },
+    {
+        "START TIME": "00:38:14",
+        "STATE": "Active",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "69 %"
+    },
+    {
+        "START TIME": "00:41:16",
+        "STATE": "Connected standby",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "67 %"
+    },
+    {
+        "START TIME": "01:11:58",
+        "STATE": "Suspended",
+        "SOURCE": "",
+        "CAPACITY REMAINING": "62 %"
+    },
+    {
+        "START TIME": "01:18:38",
+        "STATE": "Connected standby",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "59 %"
+    },
+    {
+        "START TIME": "01:19:14",
+        "STATE": "Active",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "58 %"
+    },
+    {
+        "START TIME": "02:01:17",
+        "STATE": "Suspended",
+        "SOURCE": "",
+        "CAPACITY REMAINING": "6 %"
+    },
+    {
+        "START TIME": "10:14:38",
+        "STATE": "Active",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "86 %"
+    },
+    {
+        "START TIME": "10:18:30",
+        "STATE": "Connected standby",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "78 %"
+    },
+    {
+        "START TIME": "10:20:58",
+        "STATE": "Active",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "77 %"
+    },
+    {
+        "START TIME": "11:15:28",
+        "STATE": "Suspended",
+        "SOURCE": "",
+        "CAPACITY REMAINING": "19 %"
+    },
+    {
+        "START TIME": "11:38:49",
+        "STATE": "Active",
+        "SOURCE": "AC",
+        "CAPACITY REMAINING": "19 %"
+    },
+    {
+        "START TIME": "13:14:46",
+        "STATE": "Connected standby",
+        "SOURCE": "AC",
+        "CAPACITY REMAINING": "99 %"
+    },
+    {
+        "START TIME": "13:19:12",
+        "STATE": "Active",
+        "SOURCE": "AC",
+        "CAPACITY REMAINING": "100 %"
+    },
+    {
+        "START TIME": "13:34:21",
+        "STATE": "Active",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "100 %"
+    },
+    {
+        "START TIME": "13:47:47",
+        "STATE": "Connected standby",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "86 %"
+    },
+    {
+        "START TIME": "13:50:37",
+        "STATE": "Active",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "82 %"
+    },
+    {
+        "START TIME": "13:53:22",
+        "STATE": "Suspended",
+        "SOURCE": "",
+        "CAPACITY REMAINING": "78 %"
+    },
+    {
+        "START TIME": "2024-05-2113:30:48",
+        "STATE": "Active",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "76 %"
+    },
+    {
+        "START TIME": "13:38:09",
+        "STATE": "Connected standby",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "62 %"
+    },
+    {
+        "START TIME": "13:38:37",
+        "STATE": "Active",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "61 %"
+    },
+    {
+        "START TIME": "14:03:14",
+        "STATE": "Active",
+        "SOURCE": "AC",
+        "CAPACITY REMAINING": "21 %"
+    },
+    {
+        "START TIME": "14:47:05",
+        "STATE": "Connected standby",
+        "SOURCE": "AC",
+        "CAPACITY REMAINING": "78 %"
+    },
+    {
+        "START TIME": "14:48:38",
+        "STATE": "Active",
+        "SOURCE": "AC",
+        "CAPACITY REMAINING": "79 %"
+    },
+    {
+        "START TIME": "15:10:34",
+        "STATE": "Connected standby",
+        "SOURCE": "AC",
+        "CAPACITY REMAINING": "92 %"
+    },
+    {
+        "START TIME": "17:19:42",
+        "STATE": "Connected standby",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "100 %"
+    },
+    {
+        "START TIME": "17:20:49",
+        "STATE": "Active",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "99 %"
+    },
+    {
+        "START TIME": "18:07:59",
+        "STATE": "Connected standby",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "44 %"
+    },
+    {
+        "START TIME": "18:08:45",
+        "STATE": "Active",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "44 %"
+    },
+    {
+        "START TIME": "18:31:19",
+        "STATE": "Suspended",
+        "SOURCE": "",
+        "CAPACITY REMAINING": "15 %"
+    },
+    {
+        "START TIME": "18:32:13",
+        "STATE": "Active",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "13 %"
+    },
+    {
+        "START TIME": "18:33:18",
+        "STATE": "Connected standby",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "11 %"
+    },
+    {
+        "START TIME": "18:42:31",
+        "STATE": "Suspended",
+        "SOURCE": "",
+        "CAPACITY REMAINING": "5 %"
+    },
+    {
+        "START TIME": "21:10:21",
+        "STATE": "Connected standby",
+        "SOURCE": "AC",
+        "CAPACITY REMAINING": "7 %"
+    },
+    {
+        "START TIME": "21:10:56",
+        "STATE": "Active",
+        "SOURCE": "AC",
+        "CAPACITY REMAINING": "8 %"
+    },
+    {
+        "START TIME": "22:07:00",
+        "STATE": "Connected standby",
+        "SOURCE": "AC",
+        "CAPACITY REMAINING": "86 %"
+    },
+    {
+        "START TIME": "23:12:43",
+        "STATE": "Active",
+        "SOURCE": "AC",
+        "CAPACITY REMAINING": "100 %"
+    },
+    {
+        "START TIME": "2024-05-2200:16:45",
+        "STATE": "Active",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "100 %"
+    },
+    {
+        "START TIME": "00:19:22",
+        "STATE": "Connected standby",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "98 %"
+    },
+    {
+        "START TIME": "00:20:20",
+        "STATE": "Active",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "97 %"
+    },
+    {
+        "START TIME": "00:25:39",
+        "STATE": "Connected standby",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "93 %"
+    },
+    {
+        "START TIME": "00:47:19",
+        "STATE": "Suspended",
+        "SOURCE": "",
+        "CAPACITY REMAINING": "87 %"
+    },
+    {
+        "START TIME": "00:53:30",
+        "STATE": "Connected standby",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "85 %"
+    },
+    {
+        "START TIME": "00:54:05",
+        "STATE": "Active",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "84 %"
+    },
+    {
+        "START TIME": "00:59:56",
+        "STATE": "Connected standby",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "79 %"
+    },
+    {
+        "START TIME": "01:06:23",
+        "STATE": "Active",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "77 %"
+    },
+    {
+        "START TIME": "01:55:27",
+        "STATE": "Connected standby",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "23 %"
+    },
+    {
+        "START TIME": "01:55:31",
+        "STATE": "Active",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "23 %"
+    },
+    {
+        "START TIME": "02:08:30",
+        "STATE": "Active",
+        "SOURCE": "AC",
+        "CAPACITY REMAINING": "8 %"
+    },
+    {
+        "START TIME": "02:41:56",
+        "STATE": "Suspended",
+        "SOURCE": "",
+        "CAPACITY REMAINING": "64 %"
+    },
+    {
+        "START TIME": "14:32:28",
+        "STATE": "Active",
+        "SOURCE": "AC",
+        "CAPACITY REMAINING": "71 %"
+    },
+    {
+        "START TIME": "14:47:51",
+        "STATE": "Active",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "83 %"
+    },
+    {
+        "START TIME": "15:14:39",
+        "STATE": "Connected standby",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "54 %"
+    },
+    {
+        "START TIME": "15:16:25",
+        "STATE": "Active",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "53 %"
+    },
+    {
+        "START TIME": "15:21:48",
+        "STATE": "Connected standby",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "47 %"
+    },
+    {
+        "START TIME": "15:27:45",
+        "STATE": "Connected standby",
+        "SOURCE": "AC",
+        "CAPACITY REMAINING": "42 %"
+    },
+    {
+        "START TIME": "15:27:45",
+        "STATE": "Active",
+        "SOURCE": "AC",
+        "CAPACITY REMAINING": "42 %"
+    },
+    {
+        "START TIME": "15:27:51",
+        "STATE": "Connected standby",
+        "SOURCE": "AC",
+        "CAPACITY REMAINING": "42 %"
+    },
+    {
+        "START TIME": "15:29:06",
+        "STATE": "Active",
+        "SOURCE": "AC",
+        "CAPACITY REMAINING": "44 %"
+    },
+    {
+        "START TIME": "16:56:18",
+        "STATE": "Connected standby",
+        "SOURCE": "AC",
+        "CAPACITY REMAINING": "100 %"
+    },
+    {
+        "START TIME": "17:39:44",
+        "STATE": "Active",
+        "SOURCE": "AC",
+        "CAPACITY REMAINING": "100 %"
+    },
+    {
+        "START TIME": "17:53:08",
+        "STATE": "Active",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "100 %"
+    },
+    {
+        "START TIME": "18:32:05",
+        "STATE": "Report generated",
+        "SOURCE": "Battery",
+        "CAPACITY REMAINING": "56 %"
+    }
+]

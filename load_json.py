@@ -2,6 +2,12 @@ import json
 import pandas as pd
 
 
+def read_json_file(file_path):
+    with open(file_path, 'r') as file:
+        data = json.load(file)
+    return data
+
+
 def load_capacity_history_from_json(json_file):
     with open(json_file, 'r') as f:
         data = json.load(f)
@@ -28,5 +34,8 @@ def load_capacity_history_from_json(json_file):
 
 
 if __name__ == "__main__":
+    pass
     capacity_history_df = load_capacity_history_from_json('data/battery-capacity-history.json')
     print(capacity_history_df)
+    # data = read_json_file('data/battery-report.json')
+    # print(data)

@@ -5,7 +5,7 @@ import datetime
 import mplcursors
 import numpy as np
 import pandas as pd
-from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QComboBox, QTableWidget, QTableWidgetItem
+from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QComboBox, QTableWidget, QTableWidgetItem, QHBoxLayout
 from PyQt6.QtGui import QFont, QColor
 from PyQt6.QtCore import Qt
 import matplotlib
@@ -26,10 +26,19 @@ class BatteryApp(QMainWindow):
         self.setWindowTitle('Battery Data Dashboard')
         self.setGeometry(100, 100, 800, 600)
 
-        # Create the table widget
-        self.table_widget = QTableWidget()
-        self.table_widget.setColumnCount(2)
-        self.table_widget.setHorizontalHeaderLabels(["Key", "Value"])
+        # Create the first table widget
+        self.table_widget1 = QTableWidget()
+        self.table_widget1.setColumnCount(2)
+        self.table_widget1.setHorizontalHeaderLabels(["Key", "Value"])
+        self.setup_table_style(self.table_widget1)
+        self.load_data_into_table(self.table_widget1, 'data/battery-report.json')
+
+        # Create the second table widget
+        self.table_widget2 = QTableWidget()
+        self.table_widget2.setColumnCount(2)
+        self.table_widget2.setHorizontalHeaderLabels(["Key", "Value"])
+        self.setup_table_style(self.table_widget2)
+        self.load_data_into_table(self.table_widget2, 'data/installed-batteries.json')
 
         # Load data
         self.capacity_df = load_capacity_history_from_json('data/battery-capacity-history.json')
@@ -43,33 +52,14 @@ class BatteryApp(QMainWindow):
         layout = QVBoxLayout()
         central_widget.setLayout(layout)
 
-        # Add table widget to layout
-        layout.addWidget(self.table_widget)
+        # Create horizontal layout for tables
+        table_layout = QHBoxLayout()
 
-        # Load the data into the table
-        self.load_data_into_table()
+        # Add table widgets to layout
+        table_layout.addWidget(self.table_widget1)
+        table_layout.addWidget(self.table_widget2)
 
-        # Set table properties
-        self.table_widget.horizontalHeader().setStretchLastSection(True)
-        self.table_widget.horizontalHeader().setDefaultAlignment(Qt.AlignmentFlag.AlignLeft)
-        self.table_widget.setAlternatingRowColors(True)
-        self.table_widget.verticalHeader().setVisible(False)
-        self.table_widget.setSortingEnabled(True)
-
-        # Set font
-        font = QFont()
-        font.setPointSize(10)
-        self.table_widget.setFont(font)
-
-        # Set cell padding
-        self.table_widget.setStyleSheet("QTableWidget::item { padding: 10px; }")
-
-        # Set table background color
-        # self.table_widget.setStyleSheet("QTableWidget { background-color: #FFFFFF; }")
-
-        # Set header style
-        header_style = "::section { background-color: #F0F0F0; border-bottom: 1px solid #CCCCCC; }"
-        self.table_widget.horizontalHeader().setStyleSheet(header_style)
+        layout.addLayout(table_layout)
 
         # Create combo box for selecting data
         self.combo_box = QComboBox()
@@ -82,8 +72,6 @@ class BatteryApp(QMainWindow):
         self.canvas = FigureCanvas(Figure())
         layout.addWidget(self.canvas)
         self.ax = self.canvas.figure.subplots()
-
-
 
         # Initial plot
         self.update_plot()
@@ -101,19 +89,47 @@ class BatteryApp(QMainWindow):
         except FileExistsError:
             print(f"Directory '{directory_path}' already exists.")
 
-    def load_data_into_table(self):
-        data = read_json_file('data/battery-report.json')
-        self.table_widget.setRowCount(len(data))
+    def setup_table_style(self, table_widget):
+        # Set table properties
+        table_widget.horizontalHeader().setStretchLastSection(True)
+        table_widget.horizontalHeader().setDefaultAlignment(Qt.AlignmentFlag.AlignLeft)
+        table_widget.setAlternatingRowColors(True)
+        table_widget.verticalHeader().setVisible(False)
+        table_widget.setSortingEnabled(True)
 
+        # Set font
+        font = QFont()
+        font.setPointSize(10)
+        table_widget.setFont(font)
+
+        # Set cell padding
+        table_widget.setStyleSheet("QTableWidget::item { padding: 10px; }")
+
+        # Set table background color
+        # table_widget.setStyleSheet("QTableWidget { background-color: #FFFFFF; }")
+
+        # Set header style
+        # header_style = "::section { background-color: #F0F0F0; border-bottom: 1px solid #CCCCCC; }"
+        # table_widget.horizontalHeader().setStyleSheet(header_style)
+
+    def load_data_into_table(self, table_widget, file_path):
+        # Read data from JSON file
+        with open(file_path, 'r') as file:
+            data = json.load(file)
+
+        # Set number of rows
+        table_widget.setRowCount(len(data))
+
+        # Populate table with data
         for row, (key, value) in enumerate(data.items()):
             key_item = QTableWidgetItem(key)
             value_item = QTableWidgetItem(str(value))
-            self.table_widget.setItem(row, 0, key_item)
-            self.table_widget.setItem(row, 1, value_item)
+            table_widget.setItem(row, 0, key_item)
+            table_widget.setItem(row, 1, value_item)
 
-    def load_json(self, file_name):
-        with open(os.path.join(os.path.dirname(__file__), file_name), 'r', encoding='utf-8') as f:
-            return json.load(f)
+    # def load_json(self, file_name):
+    #     with open(os.path.join(os.path.dirname(__file__), file_name), 'r', encoding='utf-8') as f:
+    #         return json.load(f)
 
     def update_plot(self):
         self.ax.clear()

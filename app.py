@@ -5,14 +5,15 @@ import datetime
 import mplcursors
 import numpy as np
 import pandas as pd
-from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QComboBox, QTableWidget, QTableWidgetItem, QHBoxLayout
-from PyQt6.QtGui import QFont, QColor
+from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QComboBox, QTableWidget, QTableWidgetItem, \
+    QHBoxLayout, QLabel
+from PyQt6.QtGui import QFont, QColor, QPixmap
 from PyQt6.QtCore import Qt
 import matplotlib
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
-from load_json import load_capacity_history_from_json, read_json_file
+from load_json import load_capacity_history_from_json, load_life_estimates_from_json, read_json_file
 from generate import generate_battery_report
 from clean import clean_html
 from extract import extract_data
@@ -25,6 +26,9 @@ class BatteryApp(QMainWindow):
         # self.get_data()
         self.setWindowTitle('Battery Data Dashboard')
         self.setGeometry(100, 100, 800, 600)
+
+        # Calculate battery health percentage
+        self.battery_health_percentage = self.calculate_battery_health()
 
         # Create the first table widget
         self.table_widget1 = QTableWidget()
@@ -51,6 +55,11 @@ class BatteryApp(QMainWindow):
         # Create layout
         layout = QVBoxLayout()
         central_widget.setLayout(layout)
+
+        # Add battery health icon and percentage
+        self.battery_health_label = QLabel()
+        self.update_battery_health_label()
+        layout.addWidget(self.battery_health_label, alignment=Qt.AlignmentFlag.AlignCenter)
 
         # Create horizontal layout for tables
         table_layout = QHBoxLayout()
@@ -88,6 +97,34 @@ class BatteryApp(QMainWindow):
             print(f"Directory '{directory_path}' created successfully.")
         except FileExistsError:
             print(f"Directory '{directory_path}' already exists.")
+
+    def calculate_battery_health(self):
+        # Load installed batteries data
+        battery_data = read_json_file('data/installed-batteries.json')
+        design_capacity = int(battery_data["DESIGN CAPACITY"].replace(',', '').split(' ')[0])
+        full_charge_capacity = int(battery_data["FULL CHARGE CAPACITY"].replace(',', '').split(' ')[0])
+        battery_health_percentage = (full_charge_capacity / design_capacity) * 100
+        return battery_health_percentage
+
+    def update_battery_health_label(self):
+        battery_health_icon = QPixmap('battery_icon.png')
+        icon_label = QLabel()
+        # icon_label.setPixmap(battery_health_icon)
+        icon_label.setPixmap(battery_health_icon.scaled(50, 50, Qt.AspectRatioMode.KeepAspectRatio,
+                                                        Qt.TransformationMode.SmoothTransformation))
+
+        percentage_label = QLabel(f'Battery Health: {self.battery_health_percentage:.2f}%')
+        percentage_label.setFont(QFont('Arial', 16))
+        percentage_label.setStyleSheet("color: green;")
+
+        layout = QHBoxLayout()
+        layout.addWidget(icon_label)
+        layout.addWidget(percentage_label)
+
+        container = QWidget()
+        container.setLayout(layout)
+        self.battery_health_label.setPixmap(battery_health_icon)
+        self.battery_health_label.setText(f'Battery Health: {self.battery_health_percentage:.2f}%')
 
     def setup_table_style(self, table_widget):
         # Set table properties
@@ -164,9 +201,9 @@ class BatteryApp(QMainWindow):
 
 
 # def plot_life_estimates(self):
-    #     self.life_estimates_df['PERIOD'] = pd.to_datetime(self.life_estimates_df['PERIOD'])
-    #     self.life_estimates_df.set_index('PERIOD', inplace=True)
-    #     self.life_estimates_df.plot(ax=self.ax, title='Battery Life Estimates')
+#     self.life_estimates_df['PERIOD'] = pd.to_datetime(self.life_estimates_df['PERIOD'])
+#     self.life_estimates_df.set_index('PERIOD', inplace=True)
+#     self.life_estimates_df.plot(ax=self.ax, title='Battery Life Estimates')
 
 
 if __name__ == "__main__":

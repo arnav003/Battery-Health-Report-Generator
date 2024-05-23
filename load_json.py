@@ -33,6 +33,10 @@ def load_capacity_history_from_json(json_file):
     return capacity_history_df
 
 
+def load_life_estimates_from_json():
+    pass
+
+
 if __name__ == "__main__":
     pass
     capacity_history_df = load_capacity_history_from_json('data/battery-capacity-history.json')

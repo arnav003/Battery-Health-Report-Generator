@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QComboBox, QTableWidget, QTableWidgetItem, \
     QHBoxLayout, QLabel
-from PyQt6.QtGui import QFont, QColor, QPixmap
+from PyQt6.QtGui import QFont, QColor, QPixmap, QIcon
 from PyQt6.QtCore import Qt
 import matplotlib
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -22,8 +22,7 @@ from extract import extract_data
 class BatteryApp(QMainWindow):
     def __init__(self):
         super().__init__()
-        # TODO: uncomment the below code
-        # self.get_data()
+        self.get_data()
         self.setWindowTitle('Battery Data Dashboard')
         self.setGeometry(100, 100, 800, 600)
 
@@ -33,14 +32,12 @@ class BatteryApp(QMainWindow):
         # Create the first table widget
         self.table_widget1 = QTableWidget()
         self.table_widget1.setColumnCount(2)
-        self.table_widget1.setHorizontalHeaderLabels(["Key", "Value"])
         self.setup_table_style(self.table_widget1)
         self.load_data_into_table(self.table_widget1, 'data/battery-report.json')
 
         # Create the second table widget
         self.table_widget2 = QTableWidget()
         self.table_widget2.setColumnCount(2)
-        self.table_widget2.setHorizontalHeaderLabels(["Key", "Value"])
         self.setup_table_style(self.table_widget2)
         self.load_data_into_table(self.table_widget2, 'data/installed-batteries.json')
 
@@ -57,9 +54,8 @@ class BatteryApp(QMainWindow):
         central_widget.setLayout(layout)
 
         # Add battery health icon and percentage
-        self.battery_health_label = QLabel()
-        self.update_battery_health_label()
-        layout.addWidget(self.battery_health_label, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.battery_health_layout = self.update_battery_health_label()
+        layout.addWidget(self.battery_health_layout, alignment=Qt.AlignmentFlag.AlignCenter)
 
         # Create horizontal layout for tables
         table_layout = QHBoxLayout()
@@ -109,7 +105,6 @@ class BatteryApp(QMainWindow):
     def update_battery_health_label(self):
         battery_health_icon = QPixmap('battery_icon.png')
         icon_label = QLabel()
-        # icon_label.setPixmap(battery_health_icon)
         icon_label.setPixmap(battery_health_icon.scaled(50, 50, Qt.AspectRatioMode.KeepAspectRatio,
                                                         Qt.TransformationMode.SmoothTransformation))
 
@@ -123,8 +118,8 @@ class BatteryApp(QMainWindow):
 
         container = QWidget()
         container.setLayout(layout)
-        self.battery_health_label.setPixmap(battery_health_icon)
-        self.battery_health_label.setText(f'Battery Health: {self.battery_health_percentage:.2f}%')
+
+        return container
 
     def setup_table_style(self, table_widget):
         # Set table properties
@@ -132,6 +127,7 @@ class BatteryApp(QMainWindow):
         table_widget.horizontalHeader().setDefaultAlignment(Qt.AlignmentFlag.AlignLeft)
         table_widget.setAlternatingRowColors(True)
         table_widget.verticalHeader().setVisible(False)
+        table_widget.horizontalHeader().setVisible(False)
         table_widget.setSortingEnabled(True)
 
         # Set font
@@ -141,13 +137,6 @@ class BatteryApp(QMainWindow):
 
         # Set cell padding
         table_widget.setStyleSheet("QTableWidget::item { padding: 10px; }")
-
-        # Set table background color
-        # table_widget.setStyleSheet("QTableWidget { background-color: #FFFFFF; }")
-
-        # Set header style
-        # header_style = "::section { background-color: #F0F0F0; border-bottom: 1px solid #CCCCCC; }"
-        # table_widget.horizontalHeader().setStyleSheet(header_style)
 
     def load_data_into_table(self, table_widget, file_path):
         # Read data from JSON file
@@ -208,6 +197,7 @@ class BatteryApp(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    app.setWindowIcon(QIcon('app_icon.ico'))
     window = BatteryApp()
     window.show()
     sys.exit(app.exec())

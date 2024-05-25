@@ -22,6 +22,7 @@ from extract import extract_data
 class BatteryApp(QMainWindow):
     def __init__(self):
         super().__init__()
+        # TODO: remove comment
         self.get_data()
         self.setWindowTitle('Battery Data Dashboard')
         self.setGeometry(100, 100, 800, 600)
@@ -43,7 +44,7 @@ class BatteryApp(QMainWindow):
 
         # Load data
         self.capacity_df = load_capacity_history_from_json('data/battery-capacity-history.json')
-        # self.life_estimates_df = load_life_estimates_from_json('data/battery-life-estimates.json')
+        self.life_estimates_df = load_life_estimates_from_json('data/battery-life-estimates.json')
 
         # Create central widget
         central_widget = QWidget()
@@ -69,7 +70,8 @@ class BatteryApp(QMainWindow):
         # Create combo box for selecting data
         self.combo_box = QComboBox()
         self.combo_box.addItem("Battery Capacity History")
-        self.combo_box.addItem("Battery Life Estimates")
+        self.combo_box.addItem("Battery Life Estimates (Active)")
+        self.combo_box.addItem("Battery Life Estimates (Standby)")
         self.combo_box.currentIndexChanged.connect(self.update_plot)
         layout.addWidget(self.combo_box)
 
@@ -163,9 +165,10 @@ class BatteryApp(QMainWindow):
 
         if selected_data == "Battery Capacity History":
             self.plot_capacity_history()
-        elif selected_data == "Battery Life Estimates":
-            # self.plot_life_estimates()
-            pass
+        elif selected_data == "Battery Life Estimates (Active)":
+            self.plot_life_estimates('active')
+        elif selected_data == "Battery Life Estimates (Standby)":
+            self.plot_life_estimates('standby')
 
         self.canvas.draw()
 
@@ -176,6 +179,9 @@ class BatteryApp(QMainWindow):
         self.ax.set_title('Battery Capacity History')
         self.ax.set_xlabel('Date')
         self.ax.set_ylabel('Full Charge Capacity (mWh)')
+
+        #  Adjust the limits of y-axis
+        self.ax.set_ylim(0, self.capacity_df['DESIGN CAPACITY'][0])
 
         # Angle the x-axis labels
         self.ax.set_xticklabels(self.ax.get_xticklabels(), rotation=45, ha='right')
@@ -188,11 +194,30 @@ class BatteryApp(QMainWindow):
         cursor.connect("add", lambda sel: sel.annotation.set_text(
             f'{(matplotlib.dates.num2date(sel.target[0])).strftime("%Y-%m-%d")}\n{int(sel.target[1])} mWh'))
 
+    def plot_life_estimates(self, state):
+        x_values = np.asarray(self.capacity_df['START DATE'])
+        if state == 'active':
+            columns_to_plot = ['ACTIVE (FULL CHARGE)', 'ACTIVE (DESIGN CAPACITY)']
+        elif state == 'standby':
+            columns_to_plot = ['CONNECTED STANDBY (FULL CHARGE) (time)', 'CONNECTED STANDBY (DESIGN CAPACITY) (time)']
 
-# def plot_life_estimates(self):
-#     self.life_estimates_df['PERIOD'] = pd.to_datetime(self.life_estimates_df['PERIOD'])
-#     self.life_estimates_df.set_index('PERIOD', inplace=True)
-#     self.life_estimates_df.plot(ax=self.ax, title='Battery Life Estimates')
+        y_values = self.life_estimates_df[columns_to_plot]
+
+        # Plot each column
+        for i, column in enumerate(columns_to_plot):
+            self.ax.plot(x_values, y_values[column], label=column)
+
+        self.ax.legend(loc="upper right")
+        self.ax.set_ylabel('Drain Time (in seconds)')
+
+        # Set common xlabel
+        self.ax.set_xlabel('Period')
+
+        # Rotate x-axis labels for better readability
+        self.ax.set_xticklabels(self.ax.get_xticklabels(), rotation=45, ha='right')
+
+        # Adjust layout
+        self.canvas.figure.tight_layout()
 
 
 if __name__ == "__main__":

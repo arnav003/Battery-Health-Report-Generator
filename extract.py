@@ -1,4 +1,6 @@
 import json
+import re
+
 from bs4 import BeautifulSoup
 
 
@@ -240,27 +242,55 @@ def extract_battery_life_estimates(file_path, header_text):
         print("No table found after the header.")
         return
 
-    # Extract details from the table
-    rows = table.find_all('tr')
+    # Find all rows in the table
+    rows = table.find_all('tr')[2:]  # Skipping the first two header rows
     if not rows:
         print("No rows found.")
         return
 
-    # Extracting the table headers
-    headers = [th.get_text(strip=True) for th in rows[1].find_all('td')]
-    headers = [header.replace('\xa0', ' ').strip() for header in headers if header]
-
-    # Extracting the table data
+    # Initialize a list to hold the extracted data
     data = []
-    for row in rows[2:]:
-        cells = row.find_all('td')
-        cell_data = [cell.get_text(strip=True) for cell in cells]
-        data.append(cell_data)
 
-    # # Print the extracted details
+    # Loop through each row and extract the columns
+    for row in rows:
+        columns = row.find_all('td')
+
+        period = columns[0].text.strip()
+        active_full_charge = columns[1].text.strip()
+
+        connected_standby_full_charge = columns[2].text.strip()
+
+        connected_standby_full_charge_drain = columns[2].find('span')
+        if connected_standby_full_charge_drain:
+            connected_standby_full_charge_drain = connected_standby_full_charge_drain.text
+        else:
+            connected_standby_full_charge_drain = ""
+
+        active_design_capacity = columns[4].text.strip()
+
+        connected_standby_design_capacity = columns[5].text.strip()
+
+        connected_standby_design_capacity_drain = columns[5].find('span')
+
+        if connected_standby_design_capacity_drain:
+            connected_standby_design_capacity_drain = connected_standby_design_capacity_drain.text
+        else:
+            connected_standby_design_capacity_drain = ""
+
+        # Append the extracted data to the list
+        data.append({
+            'PERIOD': period,
+            'ACTIVE (FULL CHARGE)': active_full_charge,
+            'CONNECTED STANDBY (FULL CHARGE)': connected_standby_full_charge,
+            'CONNECTED STANDBY (FULL CHARGE) DRAIN': connected_standby_full_charge_drain,
+            'ACTIVE (DESIGN CAPACITY)': active_design_capacity,
+            'CONNECTED STANDBY (DESIGN CAPACITY)': connected_standby_design_capacity,
+            'CONNECTED STANDBY (DESIGN CAPACITY) DRAIN': connected_standby_design_capacity_drain,
+        })
+
+    # Print the extracted data
     # for entry in data:
-    #     # Merging the columns for easier display
-    #     print(dict(zip(headers, entry)))
+    #     print(entry)
 
     # Save data to JSON file
     output_json = "data/battery-life-estimates.json"

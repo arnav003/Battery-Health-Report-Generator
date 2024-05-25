@@ -88,6 +88,34 @@ def load_life_estimates_from_json(json_file):
     return df
 
 
+def load_battery_usage_from_json(json_file):
+    with open(json_file, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+
+    # Create a DataFrame from the list of dictionaries
+    df = pd.DataFrame(data)
+
+    # Convert 'START TIME' to datetime
+    df['START TIME'] = pd.to_datetime(df['START TIME'], format='%Y-%m-%d %H:%M:%S')
+
+    # Convert 'DURATION' to timedelta
+    df['DURATION'] = pd.to_timedelta(df['DURATION'])
+
+    # Clean up the 'ENERGY DRAINED (%)' column
+    df['ENERGY DRAINED (%)'] = df['ENERGY DRAINED (%)'].str.replace(' %', '')
+    df['ENERGY DRAINED (%)'] = pd.to_numeric(df['ENERGY DRAINED (%)'], errors='coerce')
+
+    # Clean up the 'ENERGY DRAINED (mWh)' column
+    df['ENERGY DRAINED (mWh)'] = df['ENERGY DRAINED (mWh)'].str.replace(' mWh', '').str.replace(',', '')
+    df['ENERGY DRAINED (mWh)'] = pd.to_numeric(df['ENERGY DRAINED (mWh)'], errors='coerce')
+
+    # Replace NaN values with 0 or any appropriate placeholder
+    df['ENERGY DRAINED (%)'].fillna(0, inplace=True)
+    df['ENERGY DRAINED (mWh)'].fillna(0, inplace=True)
+
+    return df
+
+
 if __name__ == "__main__":
     pass
     # capacity_history_df = load_capacity_history_from_json('data/battery-capacity-history.json')
@@ -96,3 +124,5 @@ if __name__ == "__main__":
     # print(df.iloc[0])
     # data = read_json_file('data/battery-report.json')
     # print(data)
+    df = load_battery_usage_from_json('data/battery-usage.json')
+    print(df.iloc[0])

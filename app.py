@@ -5,6 +5,7 @@ import datetime
 import mplcursors
 import numpy as np
 import pandas as pd
+import seaborn as sns
 from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QComboBox, QTableWidget, QTableWidgetItem, \
     QHBoxLayout, QLabel
 from PyQt6.QtGui import QFont, QColor, QPixmap, QIcon
@@ -12,8 +13,11 @@ from PyQt6.QtCore import Qt
 import matplotlib
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+from qdarkstyle import _load_stylesheet
+from qdarkstyle.palette import Palette
 
-from load_json import load_capacity_history_from_json, load_life_estimates_from_json, read_json_file
+from load_json import load_capacity_history_from_json, load_life_estimates_from_json, load_battery_usage_from_json, \
+    read_json_file
 from generate import generate_battery_report
 from clean import clean_html
 from extract import extract_data
@@ -23,9 +27,12 @@ class BatteryApp(QMainWindow):
     def __init__(self):
         super().__init__()
         # TODO: remove comment
-        self.get_data()
+        # self.get_data()
         self.setWindowTitle('Battery Data Dashboard')
         self.setGeometry(100, 100, 800, 600)
+        palette = Palette()
+        palette.ID = 'light'
+        self.setStyleSheet(_load_stylesheet(palette=palette))
 
         # Calculate battery health percentage
         self.battery_health_percentage = self.calculate_battery_health()
@@ -45,6 +52,7 @@ class BatteryApp(QMainWindow):
         # Load data
         self.capacity_df = load_capacity_history_from_json('data/battery-capacity-history.json')
         self.life_estimates_df = load_life_estimates_from_json('data/battery-life-estimates.json')
+        self.battery_usage_df = load_battery_usage_from_json('data/battery-usage.json')
 
         # Create central widget
         central_widget = QWidget()
@@ -72,6 +80,7 @@ class BatteryApp(QMainWindow):
         self.combo_box.addItem("Battery Capacity History")
         self.combo_box.addItem("Battery Life Estimates (Active)")
         self.combo_box.addItem("Battery Life Estimates (Standby)")
+        self.combo_box.addItem("Battery Usage")
         self.combo_box.currentIndexChanged.connect(self.update_plot)
         layout.addWidget(self.combo_box)
 
@@ -169,6 +178,8 @@ class BatteryApp(QMainWindow):
             self.plot_life_estimates('active')
         elif selected_data == "Battery Life Estimates (Standby)":
             self.plot_life_estimates('standby')
+        elif selected_data == 'Battery Usage':
+            self.plot_battery_usage()
 
         self.canvas.draw()
 
@@ -217,6 +228,15 @@ class BatteryApp(QMainWindow):
         self.ax.set_xticklabels(self.ax.get_xticklabels(), rotation=45, ha='right')
 
         # Adjust layout
+        self.canvas.figure.tight_layout()
+
+    def plot_battery_usage(self):
+        print(self.battery_usage_df['START TIME'])
+        print(self.battery_usage_df['ENERGY DRAINED (%)'])
+        sns.lineplot(data=self.battery_usage_df, x='START TIME', y='ENERGY DRAINED (mWh)', hue='STATE', marker='o', ax=self.ax)
+        self.ax.set_ylabel('Energy Drained (%)')
+        self.ax.set_xlabel('Start Time')
+        self.ax.tick_params(axis='y')
         self.canvas.figure.tight_layout()
 
 

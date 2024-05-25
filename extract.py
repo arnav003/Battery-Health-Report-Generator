@@ -1,5 +1,5 @@
 import json
-import re
+import os
 
 from bs4 import BeautifulSoup
 
@@ -92,7 +92,7 @@ def extract_installed_batteries(file_path, header_text):
     print(f"Data successfully saved to {output_json}")
 
 
-def extract_usage(file_path, header_text):
+def extract_battery_usage(file_path, header_text):
     with open(file_path, 'r', encoding='utf-8') as file:
         soup = BeautifulSoup(file, 'html.parser')
 
@@ -117,21 +117,49 @@ def extract_usage(file_path, header_text):
     # Extracting the table headers
     headers = [th.get_text(strip=True) for th in rows[0].find_all('td')]
 
+    # Adjust headers to account for the ENERGY DRAINED column
+    headers[3] = "ENERGY DRAINED (%)"
+    headers.append("ENERGY DRAINED (mWh)")
+
     # Extracting the table data
     data = []
+    current_date = ""
     for row in rows[1:]:
         cells = row.find_all('td')
+        if len(cells) == 1 and 'colspan' in cells[0].attrs:  # Skip rows with single cell and colspan attribute
+            continue
         cell_data = []
-        for cell in cells:
-            cell_data.append(cell.get_text(strip=True))
-        data.append(dict(zip(headers, cell_data)))
+        for i, cell in enumerate(cells):
+            # Extracting date and time if span elements are present
+            if i == 0:  # The first column contains the date and time
+                date_span = cell.find('span', class_='date')
+                time_span = cell.find('span', class_='time')
+                if date_span and date_span.get_text(strip=True):
+                    current_date = date_span.get_text(strip=True)
+                date_time = f"{current_date} {time_span.get_text(strip=True)}" if time_span else current_date
+                cell_data.append(date_time.strip())
+            elif i == 3:  # The fourth column contains percentage
+                percent = cell.get_text(strip=True).split('%')[0].strip() + ' %'
+                cell_data.append(percent)
+            elif i == 4:  # The fifth column contains mWh
+                mwh = cell.get_text(strip=True).replace(',', '').split(' ')[0].strip() + ' mWh'
+                cell_data.append(mwh)
+            else:
+                cell_data.append(cell.get_text(strip=True))
+
+        if cell_data:
+            # Check for ENERGY DRAINED (mWh) column value
+            if len(cell_data) == len(headers) - 1:
+                cell_data.append("0 mWh")
+            data.append(dict(zip(headers, cell_data)))
 
     # Print the extracted details
-    # for entry in data:
-    #     print(entry)
+    for entry in data:
+        print(entry)
 
     # Save data to JSON file
-    output_json = "data/" + header_text.split(' ')[0].lower() + "-usage.json"
+    output_json = os.path.join("data", header_text.split(' ')[0].lower() + "-usage.json")
+    os.makedirs(os.path.dirname(output_json), exist_ok=True)
     with open(output_json, 'w', encoding='utf-8') as json_file:
         json.dump(data, json_file, ensure_ascii=False, indent=4)
 
@@ -302,20 +330,20 @@ def extract_battery_life_estimates(file_path, header_text):
 
 def extract_data():
     file_path = 'cleaned_battery-report.html'
-    print('Extracting battery report')
-    extract_battery_report(file_path, 'Battery report')
-    print('Extracting installed batteries')
-    extract_installed_batteries(file_path, 'Installed batteries')
-    print('Extracting recent usage')
-    extract_usage(file_path, 'Recent usage')
+    # print('Extracting battery report')
+    # extract_battery_report(file_path, 'Battery report')
+    # print('Extracting installed batteries')
+    # extract_installed_batteries(file_path, 'Installed batteries')
+    # print('Extracting recent usage')
+    # extract_usage(file_path, 'Recent usage')
     print('Extracting battery usage')
-    extract_usage(file_path, 'Battery usage')
-    print('Extracting usage history')
-    extract_usage_history(file_path, 'Usage history')
-    print('Extracting battery capacity history')
-    extract_battery_capacity_history(file_path, 'Battery capacity history')
-    print('Extracting battery life estimates')
-    extract_battery_life_estimates(file_path, 'Battery life estimates')
+    extract_battery_usage(file_path, 'Battery usage')
+    # print('Extracting usage history')
+    # extract_usage_history(file_path, 'Usage history')
+    # print('Extracting battery capacity history')
+    # extract_battery_capacity_history(file_path, 'Battery capacity history')
+    # print('Extracting battery life estimates')
+    # extract_battery_life_estimates(file_path, 'Battery life estimates')
 
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 import sys
 import json
 import os
+from pathlib import Path
 import datetime
 import mplcursors
 import numpy as np
@@ -15,7 +16,6 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from qdarkstyle import _load_stylesheet
 from qdarkstyle.palette import Palette
-from qframelesswindow import AcrylicWindow
 
 from load_json import load_capacity_history_from_json, load_life_estimates_from_json, load_battery_usage_from_json, \
     read_json_file
@@ -24,7 +24,7 @@ from clean import clean_html
 from extract import extract_data
 
 
-class App(QMainWindow):
+class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('Battery Health Report Generator')
@@ -272,9 +272,19 @@ class App(QMainWindow):
         self.canvas.figure.tight_layout()
 
 
+def apply_stylesheet(app, STYLESHEET_PATH):
+    if STYLESHEET_PATH.exists():
+        app.setStyleSheet(STYLESHEET_PATH.read_text())
+    else:
+        print(f"Stylesheet not found: {STYLESHEET_PATH}")
+
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setWindowIcon(QIcon('app_icon.ico'))
-    window = App()
+    # app.setStyle("fusion")
+    # STYLESHEET_PATH = Path(__file__).parent / "custom_stylesheet.qss"
+    # apply_stylesheet(app, STYLESHEET_PATH)
+    window = MainWindow()
     window.show()
     sys.exit(app.exec())

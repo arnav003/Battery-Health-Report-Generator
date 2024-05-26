@@ -7,14 +7,15 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QComboBox, QTableWidget, QTableWidgetItem, \
-    QHBoxLayout, QLabel
+    QHBoxLayout, QLabel, QProgressDialog
 from PyQt6.QtGui import QFont, QColor, QPixmap, QIcon
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QTimer
 import matplotlib
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from qdarkstyle import _load_stylesheet
 from qdarkstyle.palette import Palette
+from qframelesswindow import AcrylicWindow
 
 from load_json import load_capacity_history_from_json, load_life_estimates_from_json, load_battery_usage_from_json, \
     read_json_file
@@ -23,17 +24,58 @@ from clean import clean_html
 from extract import extract_data
 
 
-class BatteryApp(QMainWindow):
+class App(QMainWindow):
     def __init__(self):
         super().__init__()
-        # TODO: remove comment
-        # self.get_data()
-        self.setWindowTitle('Battery Data Dashboard')
+        self.setWindowTitle('Battery Health Report Generator')
         self.setGeometry(100, 100, 800, 600)
         palette = Palette()
         palette.ID = 'light'
         self.setStyleSheet(_load_stylesheet(palette=palette))
 
+        # Show loading indicator
+        self.show_loading_indicator()
+        self.progress_dialog.show()
+
+        # Get all required data
+        data_files = [
+            "data/battery-capacity-history.json",
+            "data/battery-life-estimates.json",
+            "data/battery-report.json",
+            "data/battery-usage.json",
+            "data/installed-batteries.json",
+            "data/recent-usage.json",
+            "data/usage-history.json"
+        ]
+
+        if not all(os.path.exists(file) for file in data_files):
+            QTimer.singleShot(2000, self.get_data)
+        else:
+            # Load all data into widgets
+            self.load_data()
+
+    def show_loading_indicator(self):
+        self.progress_dialog = QProgressDialog("Loading data...", "Cancel", 0, 0, self)
+        self.progress_dialog.setWindowModality(Qt.WindowModality.WindowModal)
+        self.progress_dialog.setAutoClose(False)
+
+    def get_data(self):
+        generate_battery_report()
+        clean_html()
+        self.create_directory("data")
+        extract_data()
+
+        # Load all data into widgets
+        self.load_data()
+
+    def create_directory(self, directory_path):
+        try:
+            os.makedirs(directory_path)
+            print(f"Directory '{directory_path}' created successfully.")
+        except FileExistsError:
+            print(f"Directory '{directory_path}' already exists.")
+
+    def load_data(self):
         # Calculate battery health percentage
         self.battery_health_percentage = self.calculate_battery_health()
 
@@ -92,18 +134,7 @@ class BatteryApp(QMainWindow):
         # Initial plot
         self.update_plot()
 
-    def get_data(self):
-        generate_battery_report()
-        clean_html()
-        self.create_directory("data")
-        extract_data()
-
-    def create_directory(self, directory_path):
-        try:
-            os.makedirs(directory_path)
-            print(f"Directory '{directory_path}' created successfully.")
-        except FileExistsError:
-            print(f"Directory '{directory_path}' already exists.")
+        self.progress_dialog.close()
 
     def calculate_battery_health(self):
         # Load installed batteries data
@@ -233,7 +264,8 @@ class BatteryApp(QMainWindow):
     def plot_battery_usage(self):
         print(self.battery_usage_df['START TIME'])
         print(self.battery_usage_df['ENERGY DRAINED (%)'])
-        sns.lineplot(data=self.battery_usage_df, x='START TIME', y='ENERGY DRAINED (mWh)', hue='STATE', marker='o', ax=self.ax)
+        sns.lineplot(data=self.battery_usage_df, x='START TIME', y='ENERGY DRAINED (mWh)', hue='STATE', marker='o',
+                     ax=self.ax)
         self.ax.set_ylabel('Energy Drained (%)')
         self.ax.set_xlabel('Start Time')
         self.ax.tick_params(axis='y')
@@ -243,6 +275,6 @@ class BatteryApp(QMainWindow):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setWindowIcon(QIcon('app_icon.ico'))
-    window = BatteryApp()
+    window = App()
     window.show()
     sys.exit(app.exec())

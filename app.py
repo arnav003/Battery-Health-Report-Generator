@@ -1,16 +1,19 @@
 import sys
 import json
 import os
+import requests
+import urllib.request
 from pathlib import Path
 import datetime
+import subprocess
 import mplcursors
 import numpy as np
 import pandas as pd
 import seaborn as sns
 from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QComboBox, QTableWidget, QTableWidgetItem, \
-    QHBoxLayout, QLabel, QProgressDialog
-from PyQt6.QtGui import QFont, QColor, QPixmap, QIcon
-from PyQt6.QtCore import Qt, QTimer
+    QHBoxLayout, QLabel, QProgressDialog, QMenuBar, QMessageBox
+from PyQt6.QtGui import QFont, QColor, QPixmap, QIcon, QAction, QDesktopServices
+from PyQt6.QtCore import Qt, QTimer, QUrl, QCoreApplication
 import matplotlib
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -29,9 +32,14 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle('Battery Health Report Generator')
         self.setGeometry(100, 100, 800, 600)
+        self.theme = 'light'
         palette = Palette()
-        palette.ID = 'light'
+        palette.ID = self.theme
         self.setStyleSheet(_load_stylesheet(palette=palette))
+
+        # Add menu bar
+        self.menu_bar = self.create_menu_bar()
+        self.setMenuBar(self.menu_bar)
 
         # Show loading indicator
         self.show_loading_indicator()
@@ -53,6 +61,175 @@ class MainWindow(QMainWindow):
         else:
             # Load all data into widgets
             self.load_data()
+
+    def create_menu_bar(self):
+        menu_bar = QMenuBar()
+
+        # File menu
+        file_menu = menu_bar.addMenu("File")
+
+        # Show battery-report.html action
+        show_report_action = QAction("Show battery-report.html", self)
+        show_report_action.triggered.connect(self.show_battery_report)
+        file_menu.addAction(show_report_action)
+
+        # Refresh action
+        refresh_action = QAction("Refresh", self)
+        refresh_action.triggered.connect(self.refresh_data)
+        file_menu.addAction(refresh_action)
+
+        # Toggle theme action
+        self.toggle_theme_action = QAction("Toggle Theme", self)
+        self.toggle_theme_action.triggered.connect(self.toggle_theme)
+        file_menu.addAction(self.toggle_theme_action)
+
+        # Exit action
+        exit_action = QAction("Exit", self)
+        exit_action.triggered.connect(self.close)
+        file_menu.addAction(exit_action)
+
+        # Help menu
+        help_menu = menu_bar.addMenu("Help")
+
+        # About us action
+        about_action = QAction("About Us", self)
+        about_action.triggered.connect(self.show_about_dialog)
+        help_menu.addAction(about_action)
+
+        # Update software action
+        update_action = QAction("Update Software", self)
+        update_action.triggered.connect(self.update_software)
+        help_menu.addAction(update_action)
+
+        # Send feedback action
+        feedback_action = QAction("Send Feedback", self)
+        feedback_action.triggered.connect(self.send_feedback)
+        help_menu.addAction(feedback_action)
+
+        return menu_bar
+
+    def show_battery_report(self):
+        file_path = 'battery-report.html'
+        if file_path:
+            os.startfile(file_path)
+
+    def refresh_data(self):
+        self.show_loading_indicator()
+        self.progress_dialog.show()
+        QTimer.singleShot(2000, self.get_data)
+
+    def toggle_theme(self):
+        if self.theme == 'light':
+            self.theme = 'dark'
+        elif self.theme == 'dark':
+            self.theme = 'light'
+
+        palette = Palette()
+        palette.ID = self.theme
+        self.setStyleSheet(_load_stylesheet(palette=palette))
+
+    def show_about_dialog(self):
+        about_text = "Battery Health Report Generator\n\nCreated by Lala Arnav Vatsal\narnav.vatsal2213@gmail.com\n\nThis application provides detailed battery health reports and analysis."
+        QMessageBox.about(self, "About Us", about_text)
+
+    def check_for_updates(self):
+        # GitHub repository details
+        repo_owner = "arnav003"
+        repo_name = "Battery-Health-Report-Generator"
+
+        # GitHub API URL for releases
+        api_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/releases/latest"
+
+        try:
+            response = requests.get(api_url)
+            if response.status_code == 200:
+                latest_release = response.json()
+                latest_version = latest_release["tag_name"]
+                download_url = None
+                for asset in latest_release['assets']:
+                    if asset['name'].endswith('.exe'):
+                        download_url = asset['browser_download_url']
+                        break
+                return latest_version, download_url
+            else:
+                print("Failed to fetch release information from GitHub:", response.text)
+                return None, None
+        except Exception as e:
+            print("Error checking for updates:", e)
+            return None, None
+
+    def download_and_install_update(self, download_url, installer_path):
+        # Create a QMessageBox to show download progress
+        progress_dialog = QMessageBox(self)
+        progress_dialog.setWindowTitle("Downloading Update")
+        progress_dialog.setText("Downloading update...")
+        progress_dialog.setStandardButtons(QMessageBox.StandardButton.Cancel)
+        progress_dialog.show()
+
+        try:
+            # Download the installer
+            response = requests.get(download_url, stream=True)
+            total_size = int(response.headers.get('content-length', 0))
+            downloaded_size = 0
+
+            with open(installer_path, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+                        downloaded_size += len(chunk)
+                        progress = int((downloaded_size / total_size) * 100)
+                        progress_dialog.setText(f"Downloading update... {progress}%")
+                        QCoreApplication.processEvents()  # Process pending events to update UI
+                    else:
+                        break
+
+            # Close the progress dialog
+            progress_dialog.close()
+
+            # Open file explorer at the directory containing the installer
+            installer_directory = os.path.dirname(installer_path)
+            subprocess.Popen(['explorer', installer_directory])
+
+            # Exit the application
+            sys.exit()
+        except Exception as e:
+            print("Error downloading updates:", e)
+            QMessageBox.critical(self, "Update Error", "Failed to download updates. Please try again later.")
+
+    def update_software(self):
+        # Check for updates
+        latest_version, download_url = self.check_for_updates()
+        if latest_version is None or download_url is None:
+            QMessageBox.critical(self, "Update Error", "Failed to check for updates. Please try again later.")
+            return
+
+        current_version = "1.5.0"  # TODO: Replace with the current version
+        latest_version = latest_version.lstrip("v")
+        if latest_version > current_version:
+            # Prompt user to download and install updates
+            reply = QMessageBox.question(self, "Update Available",
+                                         f"A new version ({latest_version}) is available. Do you want to download and install it?",
+                                         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+
+            if reply == QMessageBox.StandardButton.Yes:
+                # Download and install updates
+                # You can use a library like requests to download the file
+                # For simplicity, let's assume the download URL is in `download_url`
+                # and the file is downloaded to the current directory
+                try:
+                    installer_path = str(Path.home() / "Downloads") + f"\latest_installer_v{latest_version}.exe"
+                    self.download_and_install_update(download_url, installer_path)
+                    QMessageBox.information(self, "Update Complete",
+                                            "The software has been updated successfully. Please restart the application.")
+                except Exception as e:
+                    print("Error downloading updates:", e)
+                    QMessageBox.critical(self, "Update Error", "Failed to download updates. Please try again later.")
+        else:
+            QMessageBox.information(self, "No Updates", "You are already using the latest version of the software.")
+
+    def send_feedback(self):
+        feedback_form_url = "http://arnav003.github.io/battery-health.html#feedback"
+        QDesktopServices.openUrl(QUrl(feedback_form_url))
 
     def show_loading_indicator(self):
         self.progress_dialog = QProgressDialog("Loading data...", "Cancel", 0, 0, self)
@@ -194,10 +371,6 @@ class MainWindow(QMainWindow):
             value_item = QTableWidgetItem(str(value))
             table_widget.setItem(row, 0, key_item)
             table_widget.setItem(row, 1, value_item)
-
-    # def load_json(self, file_name):
-    #     with open(os.path.join(os.path.dirname(__file__), file_name), 'r', encoding='utf-8') as f:
-    #         return json.load(f)
 
     def update_plot(self):
         self.ax.clear()

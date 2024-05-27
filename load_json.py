@@ -88,6 +88,31 @@ def load_life_estimates_from_json(json_file):
     return df
 
 
+def load_recent_usage_from_json(json_file):
+    with open(json_file, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+
+    # Create a DataFrame from the list of dictionaries
+    df = pd.DataFrame(data)
+
+    # Convert 'START TIME' to datetime
+    df['START TIME'] = pd.to_datetime(df['START TIME'], format='%Y-%m-%d %H:%M:%S')
+
+    # Clean up the 'CAPACITY REMAINING (%)' column
+    df['CAPACITY REMAINING (%)'] = df['CAPACITY REMAINING (%)'].str.replace(' %', '')
+    df['CAPACITY REMAINING (%)'] = pd.to_numeric(df['CAPACITY REMAINING (%)'], errors='coerce')
+
+    # Clean up the 'CAPACITY REMAINING (mWh)' column
+    df['CAPACITY REMAINING (mWh)'] = df['CAPACITY REMAINING (mWh)'].str.replace(' mWh', '').str.replace(',', '')
+    df['CAPACITY REMAINING (mWh)'] = pd.to_numeric(df['CAPACITY REMAINING (mWh)'], errors='coerce')
+
+    # Replace NaN values with 0 or any appropriate placeholder
+    df['CAPACITY REMAINING (%)'] = df['CAPACITY REMAINING (%)'].fillna(0)
+    df['CAPACITY REMAINING (mWh)'] = df['CAPACITY REMAINING (mWh)'].fillna(0)
+
+    return df
+
+
 def load_battery_usage_from_json(json_file):
     with open(json_file, 'r', encoding='utf-8') as f:
         data = json.load(f)
@@ -110,8 +135,37 @@ def load_battery_usage_from_json(json_file):
     df['ENERGY DRAINED (mWh)'] = pd.to_numeric(df['ENERGY DRAINED (mWh)'], errors='coerce')
 
     # Replace NaN values with 0 or any appropriate placeholder
-    df['ENERGY DRAINED (%)'].fillna(0, inplace=True)
-    df['ENERGY DRAINED (mWh)'].fillna(0, inplace=True)
+    df['ENERGY DRAINED (%)'] = df['ENERGY DRAINED (%)'].fillna(0)
+    df['ENERGY DRAINED (mWh)'] = df['ENERGY DRAINED (mWh)'].fillna(0)
+
+    return df
+
+def load_current_battery_life_estimate_from_json(json_file):
+    with open(json_file, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+
+    # Create a DataFrame from the list of dictionaries
+    df = pd.DataFrame(data)
+
+    # Function to preprocess time data
+    def preprocess_time(time_str):
+        if isinstance(time_str, float) and np.isnan(time_str):
+            return np.nan  # Return NaN if the value is NaN
+        components = time_str.split(':')
+        total_hours = int(components[0])
+        days = int(total_hours // 24)  # Calculate number of days
+        hours = int(total_hours % 24)  # Extract remaining hours
+        minutes = int(components[1])
+        seconds = int(components[2])
+        # return f'{days} days {hours:02d}:{minutes:02d}:{seconds:02d}'
+        return int(((days * 24 + hours) * 60 + minutes) * 60 + seconds)
+
+    # Apply preprocessing function to time column
+    df['ACTIVE (FULL CHARGE)'] = df['ACTIVE (FULL CHARGE)'].apply(preprocess_time)
+    df['CONNECTED STANDBY (FULL CHARGE)'] = df['CONNECTED STANDBY (FULL CHARGE)'].apply(preprocess_time)
+    df['ACTIVE (DESIGN CAPACITY)'] = df['ACTIVE (DESIGN CAPACITY)'].apply(preprocess_time)
+    df['CONNECTED STANDBY (DESIGN CAPACITY)'] = df['CONNECTED STANDBY (DESIGN CAPACITY)'].apply(
+        preprocess_time)
 
     return df
 
@@ -124,5 +178,9 @@ if __name__ == "__main__":
     # print(df.iloc[0])
     # data = read_json_file('data/battery-report.json')
     # print(data)
-    df = load_battery_usage_from_json('data/battery-usage.json')
-    print(df.iloc[0])
+    # df = load_battery_usage_from_json('data/battery-usage.json')
+    # print(df.iloc[0])
+    # df = load_recent_usage_from_json('data/recent-usage.json')
+    # print(df.iloc[0])
+    # df = load_current_battery_life_estimate_from_json('data/current-battery-life-estimate.json')
+    # print(df.iloc[0])

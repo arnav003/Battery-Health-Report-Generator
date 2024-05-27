@@ -2,9 +2,7 @@ import sys
 import json
 import os
 import requests
-import urllib.request
 from pathlib import Path
-import datetime
 import subprocess
 import mplcursors
 import numpy as np
@@ -12,7 +10,7 @@ import pandas as pd
 import seaborn as sns
 from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QComboBox, QTableWidget, QTableWidgetItem, \
     QHBoxLayout, QLabel, QProgressDialog, QMenuBar, QMessageBox
-from PyQt6.QtGui import QFont, QColor, QPixmap, QIcon, QAction, QDesktopServices
+from PyQt6.QtGui import QFont, QPixmap, QIcon, QAction, QDesktopServices
 from PyQt6.QtCore import Qt, QTimer, QUrl, QCoreApplication
 import matplotlib
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -20,8 +18,8 @@ from matplotlib.figure import Figure
 from qdarkstyle import _load_stylesheet
 from qdarkstyle.palette import Palette
 
-from load_json import load_capacity_history_from_json, load_life_estimates_from_json, load_battery_usage_from_json, \
-    read_json_file
+from load_json import load_capacity_history_from_json, load_life_estimates_from_json, load_recent_usage_from_json, \
+    load_battery_usage_from_json, load_current_battery_life_estimate_from_json, read_json_file
 from generate import generate_battery_report
 from clean import clean_html
 from extract import extract_data
@@ -271,6 +269,7 @@ class MainWindow(QMainWindow):
         # Load data
         self.capacity_df = load_capacity_history_from_json('data/battery-capacity-history.json')
         self.life_estimates_df = load_life_estimates_from_json('data/battery-life-estimates.json')
+        self.recent_usage_df = load_recent_usage_from_json('data/recent-usage.json')
         self.battery_usage_df = load_battery_usage_from_json('data/battery-usage.json')
 
         # Create central widget
@@ -299,6 +298,7 @@ class MainWindow(QMainWindow):
         self.combo_box.addItem("Battery Capacity History")
         self.combo_box.addItem("Battery Life Estimates (Active)")
         self.combo_box.addItem("Battery Life Estimates (Standby)")
+        self.combo_box.addItem("Recent Usage")
         self.combo_box.addItem("Battery Usage")
         self.combo_box.currentIndexChanged.connect(self.update_plot)
         layout.addWidget(self.combo_box)
@@ -382,6 +382,8 @@ class MainWindow(QMainWindow):
             self.plot_life_estimates('active')
         elif selected_data == "Battery Life Estimates (Standby)":
             self.plot_life_estimates('standby')
+        elif selected_data == 'Recent Usage':
+            self.plot_recent_usage()
         elif selected_data == 'Battery Usage':
             self.plot_battery_usage()
 
@@ -396,7 +398,7 @@ class MainWindow(QMainWindow):
         self.ax.set_ylabel('Full Charge Capacity (mWh)')
 
         #  Adjust the limits of y-axis
-        self.ax.set_ylim(0, self.capacity_df['DESIGN CAPACITY'][0])
+        # self.ax.set_ylim(0, self.capacity_df['DESIGN CAPACITY'][0])
 
         # Angle the x-axis labels
         self.ax.set_xticklabels(self.ax.get_xticklabels(), rotation=45, ha='right')
@@ -411,19 +413,29 @@ class MainWindow(QMainWindow):
 
     def plot_life_estimates(self, state):
         x_values = np.asarray(self.capacity_df['START DATE'])
+
+        data = load_current_battery_life_estimate_from_json('data/current-battery-life-estimate.json')
+
+        design_capacity_estimate = None
         if state == 'active':
             columns_to_plot = ['ACTIVE (FULL CHARGE)', 'ACTIVE (DESIGN CAPACITY)']
+            design_capacity_estimate = data["ACTIVE (DESIGN CAPACITY)"][0]
+            self.ax.set_title('Battery Life Estimates (Active)')
         elif state == 'standby':
             columns_to_plot = ['CONNECTED STANDBY (FULL CHARGE) (time)', 'CONNECTED STANDBY (DESIGN CAPACITY) (time)']
+            design_capacity_estimate = data["CONNECTED STANDBY (DESIGN CAPACITY)"][0]
+            self.ax.set_title('Battery Life Estimates (Standby)')
 
-        y_values = self.life_estimates_df[columns_to_plot]
+        y_values_in_sec = (self.life_estimates_df[columns_to_plot[0]]/self.life_estimates_df[columns_to_plot[1]])*design_capacity_estimate
+        y_values = y_values_in_sec/60
 
         # Plot each column
-        for i, column in enumerate(columns_to_plot):
-            self.ax.plot(x_values, y_values[column], label=column)
+        # for i, column in enumerate(columns_to_plot):
+        #     self.ax.plot(x_values, y_values[column], label=column)
+        line, = self.ax.plot(x_values, y_values)
 
-        self.ax.legend(loc="upper right")
-        self.ax.set_ylabel('Drain Time (in seconds)')
+        # self.ax.legend(loc="upper right")
+        self.ax.set_ylabel('Drain Time (in minutes)')
 
         # Set common xlabel
         self.ax.set_xlabel('Period')
@@ -434,14 +446,75 @@ class MainWindow(QMainWindow):
         # Adjust layout
         self.canvas.figure.tight_layout()
 
+        # Make the plot interactive
+        cursor = mplcursors.cursor(line, hover=True)
+        cursor.connect("add", lambda sel: sel.annotation.set_text(
+            f'{(matplotlib.dates.num2date(sel.target[0])).strftime("%Y-%m-%d")}\n{int(sel.target[1])} min'))
+
+    def plot_recent_usage(self):
+        df = self.recent_usage_df
+
+        # Set START TIME as index
+        df.set_index('START TIME', inplace=True)
+
+        # Resample numeric columns to hourly frequency
+        numeric_cols = ['CAPACITY REMAINING (%)', 'CAPACITY REMAINING (mWh)']
+        df_numeric_resampled = df[numeric_cols].resample('h').mean()
+
+        # Interpolate missing values in numeric columns
+        df_numeric_resampled['CAPACITY REMAINING (%)'] = df_numeric_resampled['CAPACITY REMAINING (%)'].interpolate()
+        df_numeric_resampled['CAPACITY REMAINING (mWh)'] = df_numeric_resampled[
+            'CAPACITY REMAINING (mWh)'].interpolate()
+
+        # Handle non-numeric columns
+        # Forward-fill non-numeric columns to propagate last valid observation
+        non_numeric_cols = ['STATE', 'SOURCE']
+        df_non_numeric_resampled = df[non_numeric_cols].resample('h').ffill()
+
+        # Combine resampled numeric and non-numeric columns
+        df_resampled = pd.concat([df_numeric_resampled, df_non_numeric_resampled], axis=1)
+
+        # Reset index to get START TIME as a column again
+        df_resampled.reset_index(inplace=True)
+
+        sns.barplot(x='START TIME', y='CAPACITY REMAINING (%)', hue='SOURCE',
+                    data=df_resampled.iloc[-24:, :], ax=self.ax)
+        self.ax.set_title('Recent Battery Levels')
+        self.ax.set_xlabel('Time')
+        self.ax.set_ylabel('Capacity Remaining (%)')
+
+        tick_labels = self.ax.get_xticklabels()
+
+        # Extract the text from tick labels
+        tick_texts = [label.get_text() for label in tick_labels]
+
+        # Convert to datetime format and then format to hours and minutes
+        formatted_tick_labels = [pd.to_datetime(text).strftime('%H:%M') for text in tick_texts]
+
+        # Update the x-axis with the formatted tick labels and rotate for better readability
+        self.ax.set_xticklabels(formatted_tick_labels, rotation=45, ha='right')
+
+        # Adjust layout
+        self.canvas.figure.tight_layout()
+
     def plot_battery_usage(self):
-        print(self.battery_usage_df['START TIME'])
-        print(self.battery_usage_df['ENERGY DRAINED (%)'])
-        sns.lineplot(data=self.battery_usage_df, x='START TIME', y='ENERGY DRAINED (mWh)', hue='STATE', marker='o',
-                     ax=self.ax)
-        self.ax.set_ylabel('Energy Drained (%)')
+        sns.barplot(data=self.battery_usage_df, x='START TIME', y='ENERGY DRAINED (mWh)', hue='STATE',
+                    ax=self.ax)
+        self.ax.set_ylabel('Energy Drained (mWh)')
         self.ax.set_xlabel('Start Time')
-        self.ax.tick_params(axis='y')
+        self.ax.set_title('Battery Drains')
+
+        tick_labels = self.ax.get_xticklabels()
+
+        # Extract the text from tick labels
+        tick_texts = [label.get_text() for label in tick_labels]
+
+        # Convert to datetime format and then format to hours and minutes
+        formatted_tick_labels = [pd.to_datetime(text).strftime('%H:%M') for text in tick_texts]
+
+        # Update the x-axis with the formatted tick labels and rotate for better readability
+        self.ax.set_xticklabels(formatted_tick_labels, rotation=45, ha='right')
+
         self.canvas.figure.tight_layout()
 
 

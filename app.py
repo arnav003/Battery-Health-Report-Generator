@@ -24,6 +24,9 @@ from generate import generate_battery_report
 from clean import clean_html
 from extract import extract_data
 
+# TODO: Replace with the current version
+CURRENT_VERSION = "1.6.0"
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -201,7 +204,7 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Update Error", "Failed to check for updates. Please try again later.")
             return
 
-        current_version = "1.5.0"  # TODO: Replace with the current version
+        current_version = CURRENT_VERSION
         latest_version = latest_version.lstrip("v")
         if latest_version > current_version:
             # Prompt user to download and install updates
@@ -426,8 +429,9 @@ class MainWindow(QMainWindow):
             design_capacity_estimate = data["CONNECTED STANDBY (DESIGN CAPACITY)"][0]
             self.ax.set_title('Battery Life Estimates (Standby)')
 
-        y_values_in_sec = (self.life_estimates_df[columns_to_plot[0]]/self.life_estimates_df[columns_to_plot[1]])*design_capacity_estimate
-        y_values = y_values_in_sec/60
+        y_values_in_sec = (self.life_estimates_df[columns_to_plot[0]] / self.life_estimates_df[
+            columns_to_plot[1]]) * design_capacity_estimate
+        y_values = y_values_in_sec / 60
 
         # Plot each column
         # for i, column in enumerate(columns_to_plot):

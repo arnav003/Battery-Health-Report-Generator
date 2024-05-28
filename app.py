@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QComboBox, QTableWidget, QTableWidgetItem, \
-    QHBoxLayout, QLabel, QProgressDialog, QMenuBar, QMessageBox
+    QHBoxLayout, QLabel, QProgressDialog, QMenuBar, QMessageBox, QSlider
 from PyQt6.QtGui import QFont, QPixmap, QIcon, QAction, QDesktopServices
 from PyQt6.QtCore import Qt, QTimer, QUrl, QCoreApplication
 import matplotlib
@@ -28,11 +28,18 @@ from extract import extract_data
 CURRENT_VERSION = "1.6.0"
 
 
+class MplCanvas(FigureCanvas):
+    def __init__(self, parent=None, width=5, height=4, dpi=100):
+        self.fig = Figure(figsize=(width, height), dpi=dpi)
+        self.ax = self.fig.add_subplot(111)
+        super().__init__(self.fig)
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('Battery Health Report Generator')
-        self.setGeometry(100, 100, 800, 600)
+        self.setGeometry(100, 100, 768, 768)
         self.theme = 'light'
         palette = Palette()
         palette.ID = self.theme
@@ -301,18 +308,30 @@ class MainWindow(QMainWindow):
         self.combo_box.addItem("Battery Capacity History")
         self.combo_box.addItem("Battery Life Estimates (Active)")
         self.combo_box.addItem("Battery Life Estimates (Standby)")
-        self.combo_box.addItem("Recent Usage")
+        # self.combo_box.addItem("Recent Usage")
         self.combo_box.addItem("Battery Usage")
         self.combo_box.currentIndexChanged.connect(self.update_plot)
         layout.addWidget(self.combo_box)
 
         # Create canvas for plotting
-        self.canvas = FigureCanvas(Figure())
+        self.canvas = MplCanvas(self, width=5, height=4, dpi=100)
+        self.ax = self.canvas.ax
         layout.addWidget(self.canvas)
-        self.ax = self.canvas.figure.subplots()
 
         # Initial plot
         self.update_plot()
+
+        # Create canvas for plotting
+        self.canvas_recent_usage = MplCanvas(self, width=5, height=4, dpi=100)
+        self.ax_recent_usage = self.canvas_recent_usage.ax
+        layout.addWidget(self.canvas_recent_usage)
+
+        self.sl = QSlider(Qt.Horizontal)
+
+        self.plot_recent_usage()
+
+
+        layout.addWidget(self.sl)
 
         self.progress_dialog.close()
 
@@ -385,8 +404,8 @@ class MainWindow(QMainWindow):
             self.plot_life_estimates('active')
         elif selected_data == "Battery Life Estimates (Standby)":
             self.plot_life_estimates('standby')
-        elif selected_data == 'Recent Usage':
-            self.plot_recent_usage()
+        # elif selected_data == 'Recent Usage':
+        #     self.plot_recent_usage()
         elif selected_data == 'Battery Usage':
             self.plot_battery_usage()
 
@@ -458,6 +477,9 @@ class MainWindow(QMainWindow):
     def plot_recent_usage(self):
         df = self.recent_usage_df
 
+        # Drop duplicate START TIME values
+        df = df.drop_duplicates(subset=['START TIME'])
+
         # Set START TIME as index
         df.set_index('START TIME', inplace=True)
 
@@ -481,25 +503,41 @@ class MainWindow(QMainWindow):
         # Reset index to get START TIME as a column again
         df_resampled.reset_index(inplace=True)
 
+        self.recent_usage_df = df_resampled
+
+        # Adding scroll functionality
+        self.sl.setMinimum(0)
+        self.sl.setMaximum(len(df_resampled) - 24)
+        # self.sl.setTickPosition(QSlider.TicksBelow)
+        self.sl.setTickInterval(24)
+
+        self.sl.valueChanged.connect(self.update_recent_usage)
+        self.sl.setValue(len(df_resampled) - 24)
+
+    def update_recent_usage(self):
+        pos = int(self.sl.value())
+        self.ax_recent_usage.clear()
+
+        # Plotting the data
         sns.barplot(x='START TIME', y='CAPACITY REMAINING (%)', hue='SOURCE',
-                    data=df_resampled.iloc[-24:, :], ax=self.ax)
-        self.ax.set_title('Recent Battery Levels')
-        self.ax.set_xlabel('Time')
-        self.ax.set_ylabel('Capacity Remaining (%)')
+                    data=self.recent_usage_df.iloc[pos:pos + 24, :], ax=self.ax_recent_usage)
+        self.ax_recent_usage.set_title('Recent Battery Levels')
+        self.ax_recent_usage.set_xlabel('Time')
+        self.ax_recent_usage.set_ylabel('Capacity Remaining (%)')
 
-        tick_labels = self.ax.get_xticklabels()
+        # Change background color
+        # self.ax_recent_usage.set_facecolor('#f0f0f0')  # Light grey background inside graph area
+        # self.canvas_recent_usage.figure.set_facecolor('#f0f0f0')  # Light grey background around graph area
 
-        # Extract the text from tick labels
-        tick_texts = [label.get_text() for label in tick_labels]
-
-        # Convert to datetime format and then format to hours and minutes
-        formatted_tick_labels = [pd.to_datetime(text).strftime('%H:%M') for text in tick_texts]
-
-        # Update the x-axis with the formatted tick labels and rotate for better readability
-        self.ax.set_xticklabels(formatted_tick_labels, rotation=45, ha='right')
+        tick_labels = self.ax_recent_usage.get_xticks()
+        tick_texts = pd.to_datetime(self.recent_usage_df['START TIME'].iloc[pos:pos + 24].values).strftime('%d/%m %H:%M')
+        self.ax_recent_usage.set_xticklabels(tick_texts, rotation=45, ha='right')
 
         # Adjust layout
-        self.canvas.figure.tight_layout()
+        self.canvas_recent_usage.figure.tight_layout()
+
+        self.canvas_recent_usage.draw_idle()
+        self.canvas_recent_usage.flush_events()
 
     def plot_battery_usage(self):
         sns.barplot(data=self.battery_usage_df, x='START TIME', y='ENERGY DRAINED (mWh)', hue='STATE',

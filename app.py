@@ -1,7 +1,9 @@
+import datetime
 import sys
 import json
 import os
 import requests
+import psutil
 from pathlib import Path
 import subprocess
 import mplcursors
@@ -264,6 +266,9 @@ class MainWindow(QMainWindow):
         # Calculate battery health percentage
         self.battery_health_percentage = self.calculate_battery_health()
 
+        # Calculate current battery info
+        self.current_battery_info = self.get_current_battery_info()
+
         # Create the first table widget
         self.table_widget1 = QTableWidget()
         self.table_widget1.setColumnCount(2)
@@ -293,6 +298,18 @@ class MainWindow(QMainWindow):
         # Add battery health icon and percentage
         self.battery_health_layout = self.update_battery_health_label()
         layout.addWidget(self.battery_health_layout, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        # Add current battery percentage and charging state
+        self.current_battery_info_layout = None
+
+        def func():
+            self.update_current_battery_info_label()
+            layout.addWidget(self.current_battery_info_layout, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        # Add a QTimer instance as a class variable
+        self.update_timer = QTimer(self)
+        self.update_timer.timeout.connect(func)
+        self.update_timer.start(5000)  # Update every 1000 milliseconds (1 second)
 
         # Create horizontal layout for tables
         table_layout = QHBoxLayout()
@@ -330,7 +347,6 @@ class MainWindow(QMainWindow):
 
         self.plot_recent_usage()
 
-
         layout.addWidget(self.sl)
 
         self.progress_dialog.close()
@@ -361,6 +377,53 @@ class MainWindow(QMainWindow):
         container.setLayout(layout)
 
         return container
+
+    def get_current_battery_info(self):
+        battery = psutil.sensors_battery()
+        time_remaining = datetime.timedelta(seconds=battery.secsleft)
+        if battery:
+            battery_info = {
+                'Percent': battery.percent,
+                'Seconds left': time_remaining,
+                'Plugged in': battery.power_plugged
+            }
+            return battery_info
+        else:
+            return "No battery information available"
+
+    def update_current_battery_info_label(self):
+        print("running...")
+        if self.current_battery_info_layout is not None:
+            self.current_battery_info_layout.deleteLater()
+
+        # Calculate current battery info
+        self.current_battery_info = self.get_current_battery_info()
+
+        current_percentage_label = QLabel(f'Battery Percent: {self.current_battery_info["Percent"]:.2f}%')
+        current_percentage_label.setFont(QFont('Arial', 16))
+        current_percentage_label.setStyleSheet("color: green;")
+
+        charging_state_label = QLabel(f'Plugged in: {self.current_battery_info["Plugged in"]}')
+        charging_state_label.setFont(QFont('Arial', 16))
+        charging_state_label.setStyleSheet("color: green;")
+
+        estimated_remaining_time_label = QLabel(f'Estimated remaining time: {self.current_battery_info["Seconds left"]}')
+        estimated_remaining_time_label.setFont(QFont('Arial', 16))
+        estimated_remaining_time_label.setStyleSheet("color: green;")
+
+        layout = QHBoxLayout()
+        layout.addWidget(current_percentage_label)
+        layout.addWidget(charging_state_label)
+        layout.addWidget(estimated_remaining_time_label)
+
+        container = QWidget()
+        container.setLayout(layout)
+
+        # Update the current_battery_info_layout attribute
+        self.current_battery_info_layout = container
+
+        # Add the container to the main layout
+        # self.layout.addWidget(self.current_battery_info_layout, alignment=Qt.AlignmentFlag.AlignCenter)
 
     def setup_table_style(self, table_widget):
         # Set table properties

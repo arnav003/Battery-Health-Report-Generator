@@ -11,8 +11,8 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QComboBox, QTableWidget, QTableWidgetItem, \
-    QHBoxLayout, QLabel, QProgressDialog, QMenuBar, QMessageBox, QSlider
-from PyQt6.QtGui import QFont, QPixmap, QIcon, QAction, QDesktopServices
+    QHBoxLayout, QLabel, QProgressDialog, QMenuBar, QMessageBox, QSlider, QHeaderView, QStyleFactory
+from PyQt6.QtGui import QFont, QPixmap, QIcon, QAction, QDesktopServices, QPalette, QColor
 from PyQt6.QtCore import Qt, QTimer, QUrl, QCoreApplication
 import matplotlib
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -41,11 +41,15 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('Battery Health Report Generator')
-        self.setGeometry(100, 100, 768, 768)
+        # self.setGeometry(50, 50, 768, 960) # Limit the size of window
+        self.resize(768, 960)
         self.theme = 'light'
-        palette = Palette()
-        palette.ID = self.theme
-        self.setStyleSheet(_load_stylesheet(palette=palette))
+        set_light_palette(app)
+
+        # palette = Palette()
+        # palette.ID = self.theme
+        # self.setStyleSheet(_load_stylesheet(palette=palette))
+        # self.setStyleSheet(create_custom_qss_from_palette("light", "", set_light_palette()))
 
         # Add menu bar
         self.menu_bar = self.create_menu_bar()
@@ -129,14 +133,20 @@ class MainWindow(QMainWindow):
         QTimer.singleShot(2000, self.get_data)
 
     def toggle_theme(self):
+        # if self.theme == 'light':
+        #     self.theme = 'dark'
+        # elif self.theme == 'dark':
+        #     self.theme = 'light'
+        # palette = Palette()
+        # palette.ID = self.theme
+        # self.setStyleSheet(_load_stylesheet(palette=palette))
+
         if self.theme == 'light':
             self.theme = 'dark'
+            set_dark_palette(app)
         elif self.theme == 'dark':
             self.theme = 'light'
-
-        palette = Palette()
-        palette.ID = self.theme
-        self.setStyleSheet(_load_stylesheet(palette=palette))
+            set_light_palette(app)
 
     def show_about_dialog(self):
         about_text = "Battery Health Report Generator\n\nCreated by Lala Arnav Vatsal\narnav.vatsal2213@gmail.com\n\nThis application provides detailed battery health reports and analysis."
@@ -306,10 +316,12 @@ class MainWindow(QMainWindow):
             self.update_current_battery_info_label()
             layout.addWidget(self.current_battery_info_layout, alignment=Qt.AlignmentFlag.AlignCenter)
 
+        func()
+
         # Add a QTimer instance as a class variable
         self.update_timer = QTimer(self)
         self.update_timer.timeout.connect(func)
-        self.update_timer.start(5000)  # Update every 1000 milliseconds (1 second)
+        self.update_timer.start(10000)  # Update every 10000 milliseconds (1 second)
 
         # Create horizontal layout for tables
         table_layout = QHBoxLayout()
@@ -343,7 +355,7 @@ class MainWindow(QMainWindow):
         self.ax_recent_usage = self.canvas_recent_usage.ax
         layout.addWidget(self.canvas_recent_usage)
 
-        self.sl = QSlider(Qt.Horizontal)
+        self.sl = QSlider(Qt.Orientation.Horizontal)
 
         self.plot_recent_usage()
 
@@ -380,12 +392,20 @@ class MainWindow(QMainWindow):
 
     def get_current_battery_info(self):
         battery = psutil.sensors_battery()
-        time_remaining = datetime.timedelta(seconds=battery.secsleft)
+
+        if battery.secsleft < 0:
+            time_remaining = '- -'
+        else:
+            time_remaining = datetime.timedelta(seconds=battery.secsleft)
+        if battery.power_plugged:
+            is_plugged = 'Yes'
+        else:
+            is_plugged = 'No'
         if battery:
             battery_info = {
                 'Percent': battery.percent,
                 'Seconds left': time_remaining,
-                'Plugged in': battery.power_plugged
+                'Plugged in': is_plugged
             }
             return battery_info
         else:
@@ -407,7 +427,8 @@ class MainWindow(QMainWindow):
         charging_state_label.setFont(QFont('Arial', 16))
         charging_state_label.setStyleSheet("color: green;")
 
-        estimated_remaining_time_label = QLabel(f'Estimated remaining time: {self.current_battery_info["Seconds left"]}')
+        estimated_remaining_time_label = QLabel(
+            f'Estimated remaining time: {self.current_battery_info["Seconds left"]}')
         estimated_remaining_time_label.setFont(QFont('Arial', 16))
         estimated_remaining_time_label.setStyleSheet("color: green;")
 
@@ -422,17 +443,15 @@ class MainWindow(QMainWindow):
         # Update the current_battery_info_layout attribute
         self.current_battery_info_layout = container
 
-        # Add the container to the main layout
-        # self.layout.addWidget(self.current_battery_info_layout, alignment=Qt.AlignmentFlag.AlignCenter)
-
     def setup_table_style(self, table_widget):
+        pass
         # Set table properties
-        table_widget.horizontalHeader().setStretchLastSection(True)
-        table_widget.horizontalHeader().setDefaultAlignment(Qt.AlignmentFlag.AlignLeft)
-        table_widget.setAlternatingRowColors(True)
         table_widget.verticalHeader().setVisible(False)
         table_widget.horizontalHeader().setVisible(False)
-        table_widget.setSortingEnabled(True)
+        table_widget.resizeColumnsToContents()
+
+        table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        table_widget.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
 
         # Set font
         font = QFont()
@@ -440,7 +459,15 @@ class MainWindow(QMainWindow):
         table_widget.setFont(font)
 
         # Set cell padding
-        table_widget.setStyleSheet("QTableWidget::item { padding: 10px; }")
+        table_widget.setStyleSheet("""
+                QTableWidget::item { 
+                    padding: 10px; 
+                }
+                QTableWidget::item:hover {
+                    background-color: none;
+                    border: none;
+                }
+            """)
 
     def load_data_into_table(self, table_widget, file_path):
         # Read data from JSON file
@@ -472,6 +499,9 @@ class MainWindow(QMainWindow):
         elif selected_data == 'Battery Usage':
             self.plot_battery_usage()
 
+        # Adjust layout to make room for the labels
+        self.canvas.figure.tight_layout()
+
         self.canvas.draw()
 
     def plot_capacity_history(self):
@@ -487,9 +517,6 @@ class MainWindow(QMainWindow):
 
         # Angle the x-axis labels
         self.ax.set_xticklabels(self.ax.get_xticklabels(), rotation=45, ha='right')
-
-        # Adjust layout to make room for the labels
-        self.canvas.figure.tight_layout()
 
         # Make the plot interactive
         cursor = mplcursors.cursor(line, hover=True)
@@ -515,9 +542,6 @@ class MainWindow(QMainWindow):
             columns_to_plot[1]]) * design_capacity_estimate
         y_values = y_values_in_sec / 60
 
-        # Plot each column
-        # for i, column in enumerate(columns_to_plot):
-        #     self.ax.plot(x_values, y_values[column], label=column)
         line, = self.ax.plot(x_values, y_values)
 
         # self.ax.legend(loc="upper right")
@@ -528,9 +552,6 @@ class MainWindow(QMainWindow):
 
         # Rotate x-axis labels for better readability
         self.ax.set_xticklabels(self.ax.get_xticklabels(), rotation=45, ha='right')
-
-        # Adjust layout
-        self.canvas.figure.tight_layout()
 
         # Make the plot interactive
         cursor = mplcursors.cursor(line, hover=True)
@@ -571,7 +592,7 @@ class MainWindow(QMainWindow):
         # Adding scroll functionality
         self.sl.setMinimum(0)
         self.sl.setMaximum(len(df_resampled) - 24)
-        # self.sl.setTickPosition(QSlider.TicksBelow)
+        self.sl.setTickPosition(QSlider.TickPosition.TicksBelow)
         self.sl.setTickInterval(24)
 
         self.sl.valueChanged.connect(self.update_recent_usage)
@@ -589,11 +610,12 @@ class MainWindow(QMainWindow):
         self.ax_recent_usage.set_ylabel('Capacity Remaining (%)')
 
         # Change background color
-        # self.ax_recent_usage.set_facecolor('#f0f0f0')  # Light grey background inside graph area
+        self.ax_recent_usage.set_facecolor('#f0f0f0')  # Light grey background inside graph area
         # self.canvas_recent_usage.figure.set_facecolor('#f0f0f0')  # Light grey background around graph area
 
         tick_labels = self.ax_recent_usage.get_xticks()
-        tick_texts = pd.to_datetime(self.recent_usage_df['START TIME'].iloc[pos:pos + 24].values).strftime('%d/%m %H:%M')
+        tick_texts = pd.to_datetime(self.recent_usage_df['START TIME'].iloc[pos:pos + 24].values).strftime(
+            '%d/%m %H:%M')
         self.ax_recent_usage.set_xticklabels(tick_texts, rotation=45, ha='right')
 
         # Adjust layout
@@ -620,8 +642,6 @@ class MainWindow(QMainWindow):
         # Update the x-axis with the formatted tick labels and rotate for better readability
         self.ax.set_xticklabels(formatted_tick_labels, rotation=45, ha='right')
 
-        self.canvas.figure.tight_layout()
-
 
 def apply_stylesheet(app, STYLESHEET_PATH):
     if STYLESHEET_PATH.exists():
@@ -630,12 +650,56 @@ def apply_stylesheet(app, STYLESHEET_PATH):
         print(f"Stylesheet not found: {STYLESHEET_PATH}")
 
 
+def set_light_palette(app):
+    palette = QPalette()
+
+    # Base colors
+    palette.setColor(QPalette.ColorRole.Window, QColor(255, 255, 255))
+    palette.setColor(QPalette.ColorRole.WindowText, QColor(0, 0, 0))
+    palette.setColor(QPalette.ColorRole.Base, QColor(255, 255, 255))
+    palette.setColor(QPalette.ColorRole.AlternateBase, QColor(240, 240, 240))
+    palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(255, 255, 255))
+    palette.setColor(QPalette.ColorRole.ToolTipText, QColor(0, 0, 0))
+    palette.setColor(QPalette.ColorRole.Text, QColor(0, 0, 0))
+    palette.setColor(QPalette.ColorRole.Button, QColor(240, 240, 240))
+    palette.setColor(QPalette.ColorRole.ButtonText, QColor(0, 0, 0))
+    palette.setColor(QPalette.ColorRole.BrightText, QColor(255, 0, 0))
+
+    # Additional colors
+    palette.setColor(QPalette.ColorRole.Highlight, QColor(0, 120, 215))
+    palette.setColor(QPalette.ColorRole.HighlightedText, QColor(255, 255, 255))
+
+    app.setPalette(palette)
+
+
+def set_dark_palette(app):
+    palette = QPalette()
+
+    # Base colors
+    palette.setColor(QPalette.ColorRole.Window, QColor(53, 53, 53))
+    palette.setColor(QPalette.ColorRole.WindowText, QColor(255, 255, 255))
+    palette.setColor(QPalette.ColorRole.Base, QColor(35, 35, 35))
+    palette.setColor(QPalette.ColorRole.AlternateBase, QColor(53, 53, 53))
+    palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(53, 53, 53))
+    palette.setColor(QPalette.ColorRole.ToolTipText, QColor(255, 255, 255))
+    palette.setColor(QPalette.ColorRole.Text, QColor(255, 255, 255))
+    palette.setColor(QPalette.ColorRole.Button, QColor(53, 53, 53))
+    palette.setColor(QPalette.ColorRole.ButtonText, QColor(255, 255, 255))
+    palette.setColor(QPalette.ColorRole.BrightText, QColor(255, 0, 0))
+
+    # Additional colors
+    palette.setColor(QPalette.ColorRole.Highlight, QColor(42, 130, 218))
+    palette.setColor(QPalette.ColorRole.HighlightedText, QColor(0, 0, 0))
+
+    app.setPalette(palette)
+
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setWindowIcon(QIcon('app_icon.ico'))
-    # app.setStyle("fusion")
     # STYLESHEET_PATH = Path(__file__).parent / "custom_stylesheet.qss"
     # apply_stylesheet(app, STYLESHEET_PATH)
+    app.setStyle(QStyleFactory.create("windows11"))  # ['windows11', 'windowsvista', 'Windows', 'Fusion']
     window = MainWindow()
     window.show()
     sys.exit(app.exec())

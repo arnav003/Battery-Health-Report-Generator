@@ -1,0 +1,162 @@
+/* General App Styling */
+QWidget {
+    background-color: rgb(245, 245, 245);
+    color: rgb(30, 30, 30);
+    font-family: 'Arial';
+    font-size: 14px;
+}
+
+/* QPushButton Styling */
+QPushButton {
+    background-color: rgb(0, 122, 204); /* Accent color */
+    color: white;
+    border: 1px solid rgb(0, 102, 174);
+    border-radius: 6px;
+    padding: 6px 12px;
+}
+
+QPushButton:hover {
+    background-color: rgb(0, 102, 174); /* Darker accent for hover */
+}
+
+QPushButton:pressed {
+    background-color: rgb(0, 82, 144); /* Even darker accent for press */
+}
+
+/* QLabel Styling */
+QLabel {
+    color: rgb(30, 30, 30);
+}
+
+/* QMenuBar Styling */
+QMenuBar {
+    background-color: rgb(0, 122, 204); /* Accent color */
+    color: white;
+    padding: 4px;
+    font-size: 14px;
+}
+
+QMenuBar::item {
+    background-color: transparent;
+    color: white;
+    padding: 4px 10px;
+    margin: 0px;
+}
+
+QMenuBar::item:selected {
+    background-color: rgb(0, 102, 174);
+    border-radius: 4px;
+}
+
+QMenuBar::item:pressed {
+    background-color: rgb(0, 82, 144);
+    border-radius: 4px;
+}
+
+/* QMenu Styling */
+QMenu {
+    background-color: white;
+    color: rgb(30, 30, 30);
+    border: 1px solid rgb(200, 200, 200);
+    padding: 8px;
+    font-size: 14px;
+    border-radius: 4px;
+}
+
+QMenu::item {
+    background-color: transparent;
+    padding: 6px 20px;
+    margin: 2px 0px;
+    border-radius: 4px;
+}
+
+QMenu::item:selected {
+    background-color: rgb(0, 122, 204);
+    color: white;
+}
+
+QMenu::item:pressed {
+    background-color: rgb(0, 102, 174);
+}
+
+/* QScrollBar Styling */
+QScrollBar:vertical {
+    background-color: rgb(245, 245, 245);
+    width: 16px;
+    margin: 16px 0 16px 0;
+}
+
+QScrollBar::handle:vertical {
+    background-color: rgb(0, 122, 204);
+    min-height: 20px;
+    border-radius: 8px;
+}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    background: none;
+}
+
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+    background: none;
+}
+
+/* QComboBox Styling */
+QComboBox {
+    background-color: white;
+    border: 1px solid rgb(200, 200, 200);
+    border-radius: 4px;
+    padding: 4px 10px;
+}
+
+QComboBox::drop-down {
+    border-left: none;
+}
+
+QComboBox::down-arrow {
+    image: url(down_arrow.png); /* Ensure you have a suitable arrow icon */
+}
+
+/* QTableWidget Styling */
+QTableWidget {
+    background-color: white;
+    border: 1px solid rgb(200, 200, 200);
+    gridline-color: rgb(200, 200, 200);
+    font-size: 14px;
+}
+
+QTableWidget::item {
+    padding: 10px;
+    border: none;
+    border-bottom: 1px solid rgb(230, 230, 230);
+}
+
+QTableWidget::item:selected {
+    background-color: rgb(0, 122, 204);
+    color: white;
+}
+
+QHeaderView::section {
+    background-color: rgb(0, 122, 204);
+    color: white;
+    padding: 6px;
+    border: none;
+    border-bottom: 1px solid rgb(200, 200, 200);
+    border-right: 1px solid rgb(200, 200, 200);
+    border-radius: 4px 4px 0 0;
+}
+
+QHeaderView::section:last {
+    border-right: none;
+}
+
+/* QHeaderView Styling */
+QHeaderView {
+    background-color: white;
+    border: none;
+    border-bottom: 1px solid rgb(200, 200, 200);
+}
+
+QTableWidget QTableCornerButton::section {
+    background-color: rgb(0, 122, 204);
+    border: none;
+}

@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QComboBox, QTableWidget, QTableWidgetItem, \
-    QHBoxLayout, QLabel, QProgressDialog, QMenuBar, QMessageBox, QSlider, QHeaderView, QStyleFactory
+    QHBoxLayout, QLabel, QProgressDialog, QMenuBar, QMessageBox, QSlider, QHeaderView, QStyleFactory, QMenu
 from PyQt6.QtGui import QFont, QPixmap, QIcon, QAction, QDesktopServices, QPalette, QColor
 from PyQt6.QtCore import Qt, QTimer, QUrl, QCoreApplication
 import matplotlib
@@ -44,7 +44,9 @@ class MainWindow(QMainWindow):
         # self.setGeometry(50, 50, 768, 960) # Limit the size of window
         self.resize(768, 960)
         self.theme = 'light'
-        set_light_palette(app)
+        # set_light_palette(app)
+        # apply_stylesheet(app, "accent_stylesheet.css")
+        set_accent_palette(app)
 
         # palette = Palette()
         # palette.ID = self.theme
@@ -92,10 +94,21 @@ class MainWindow(QMainWindow):
         refresh_action.triggered.connect(self.refresh_data)
         file_menu.addAction(refresh_action)
 
-        # Toggle theme action
-        self.toggle_theme_action = QAction("Toggle Theme", self)
-        self.toggle_theme_action.triggered.connect(self.toggle_theme)
-        file_menu.addAction(self.toggle_theme_action)
+        # Change theme submenu
+        theme_menu = QMenu("Change Theme", self)
+        self.light_theme_action = QAction("Light Theme", self)
+        self.light_theme_action.triggered.connect(lambda: self.set_theme('light'))
+        theme_menu.addAction(self.light_theme_action)
+
+        self.dark_theme_action = QAction("Dark Theme", self)
+        self.dark_theme_action.triggered.connect(lambda: self.set_theme('dark'))
+        theme_menu.addAction(self.dark_theme_action)
+
+        self.accent_theme_action = QAction("Accent Theme", self)
+        self.accent_theme_action.triggered.connect(lambda: self.set_theme('accent'))
+        theme_menu.addAction(self.accent_theme_action)
+
+        file_menu.addMenu(theme_menu)
 
         # Exit action
         exit_action = QAction("Exit", self)
@@ -132,7 +145,7 @@ class MainWindow(QMainWindow):
         self.progress_dialog.show()
         QTimer.singleShot(2000, self.get_data)
 
-    def toggle_theme(self):
+    def set_theme(self, theme_name):
         # if self.theme == 'light':
         #     self.theme = 'dark'
         # elif self.theme == 'dark':
@@ -141,12 +154,13 @@ class MainWindow(QMainWindow):
         # palette.ID = self.theme
         # self.setStyleSheet(_load_stylesheet(palette=palette))
 
-        if self.theme == 'light':
-            self.theme = 'dark'
-            set_dark_palette(app)
-        elif self.theme == 'dark':
-            self.theme = 'light'
+        self.theme = theme_name
+        if theme_name == 'light':
             set_light_palette(app)
+        elif theme_name == 'dark':
+            set_dark_palette(app)
+        elif theme_name == 'accent':
+            set_accent_palette(app)
 
     def show_about_dialog(self):
         about_text = "Battery Health Report Generator\n\nCreated by Lala Arnav Vatsal\narnav.vatsal2213@gmail.com\n\nThis application provides detailed battery health reports and analysis."
@@ -643,7 +657,8 @@ class MainWindow(QMainWindow):
         self.ax.set_xticklabels(formatted_tick_labels, rotation=45, ha='right')
 
 
-def apply_stylesheet(app, STYLESHEET_PATH):
+def apply_stylesheet(app, file_name):
+    STYLESHEET_PATH = Path(__file__).parent / file_name
     if STYLESHEET_PATH.exists():
         app.setStyleSheet(STYLESHEET_PATH.read_text())
     else:
@@ -665,11 +680,53 @@ def set_light_palette(app):
     palette.setColor(QPalette.ColorRole.ButtonText, QColor(0, 0, 0))
     palette.setColor(QPalette.ColorRole.BrightText, QColor(255, 0, 0))
 
-    # Additional colors
+    # Highlight colors
     palette.setColor(QPalette.ColorRole.Highlight, QColor(0, 120, 215))
+    palette.setColor(QPalette.ColorRole.Accent, QColor(0, 120, 215))
     palette.setColor(QPalette.ColorRole.HighlightedText, QColor(255, 255, 255))
 
+    # Menubar colors
+    palette.setColor(QPalette.ColorRole.Light, QColor(255, 255, 255))
+    palette.setColor(QPalette.ColorRole.Midlight, QColor(240, 240, 240))
+    palette.setColor(QPalette.ColorRole.Dark, QColor(200, 200, 200))
+    palette.setColor(QPalette.ColorRole.Mid, QColor(180, 180, 180))
+    palette.setColor(QPalette.ColorRole.Shadow, QColor(160, 160, 160))
+
     app.setPalette(palette)
+
+    apply_stylesheet(app, "light_stylesheet.css")
+
+
+def set_accent_palette(app):
+    palette = QPalette()
+
+    # Base colors
+    palette.setColor(QPalette.ColorRole.Window, QColor(245, 245, 245))  # Light gray background
+    palette.setColor(QPalette.ColorRole.WindowText, QColor(30, 30, 30))  # Dark text
+    palette.setColor(QPalette.ColorRole.Base, QColor(255, 255, 255))     # White for input fields
+    palette.setColor(QPalette.ColorRole.AlternateBase, QColor(240, 240, 240))  # Slightly darker for alternate rows
+    palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(255, 255, 255))
+    palette.setColor(QPalette.ColorRole.ToolTipText, QColor(30, 30, 30))
+    palette.setColor(QPalette.ColorRole.Text, QColor(30, 30, 30))
+    palette.setColor(QPalette.ColorRole.Button, QColor(240, 240, 240))
+    palette.setColor(QPalette.ColorRole.ButtonText, QColor(30, 30, 30))
+    palette.setColor(QPalette.ColorRole.BrightText, QColor(255, 0, 0))   # Red for bright text
+
+    # Highlight colors
+    palette.setColor(QPalette.ColorRole.Highlight, QColor(0, 122, 204))  # Accent color for highlights
+    palette.setColor(QPalette.ColorRole.Accent, QColor(0, 122, 204))     # Accent color for focus
+    palette.setColor(QPalette.ColorRole.HighlightedText, QColor(255, 255, 255))  # White text on highlight
+
+    # Menubar colors
+    palette.setColor(QPalette.ColorRole.Light, QColor(255, 255, 255))
+    palette.setColor(QPalette.ColorRole.Midlight, QColor(240, 240, 240))
+    palette.setColor(QPalette.ColorRole.Dark, QColor(200, 200, 200))
+    palette.setColor(QPalette.ColorRole.Mid, QColor(180, 180, 180))
+    palette.setColor(QPalette.ColorRole.Shadow, QColor(160, 160, 160))
+
+    app.setPalette(palette)
+
+    apply_stylesheet(app, "accent_stylesheet.css")
 
 
 def set_dark_palette(app):
@@ -693,13 +750,14 @@ def set_dark_palette(app):
 
     app.setPalette(palette)
 
+    apply_stylesheet(app, "dark_stylesheet.css")
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setWindowIcon(QIcon('app_icon.ico'))
-    # STYLESHEET_PATH = Path(__file__).parent / "custom_stylesheet.qss"
-    # apply_stylesheet(app, STYLESHEET_PATH)
     app.setStyle(QStyleFactory.create("windows11"))  # ['windows11', 'windowsvista', 'Windows', 'Fusion']
+    # apply_stylesheet(app, "custom_stylesheet.css")
     window = MainWindow()
     window.show()
     sys.exit(app.exec())

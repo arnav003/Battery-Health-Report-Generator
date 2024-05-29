@@ -15,12 +15,12 @@
 <div class="theme-images">
 
 <h3>Light Theme</h3>
-    <img src="design-light.png" alt="Design Light">
+    <img src="design-light-1.png" alt="Design Light">
     
 <h3>Dark Theme</h3>
-    <img src="design-dark.png" alt="Design Dark">
+    <img src="design-dark-1.png" alt="Design Dark">
 
 <h3>Accent Theme</h3>
-    <img src="design-accent.png" alt="Design Accent">
+    <img src="design-accent-1.png" alt="Design Accent">
 
 </div>

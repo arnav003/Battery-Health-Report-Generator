@@ -312,23 +312,23 @@ class MainWindow(QMainWindow):
         self.battery_usage_df = load_battery_usage_from_json('data/battery-usage.json')
 
         # Create central widget
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
+        self.central_widget = QWidget()
+        self.setCentralWidget(self.central_widget)
 
         # Create layout
-        layout = QVBoxLayout()
-        central_widget.setLayout(layout)
+        self.layout = QVBoxLayout()
+        self.central_widget.setLayout(self.layout)
 
         # Add battery health icon and percentage
         self.battery_health_layout = self.update_battery_health_label()
-        layout.addWidget(self.battery_health_layout, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.layout.addWidget(self.battery_health_layout, alignment=Qt.AlignmentFlag.AlignCenter)
 
         # Add current battery percentage and charging state
         self.current_battery_info_layout = None
 
         def func():
-            self.update_current_battery_info_label()
-            layout.addWidget(self.current_battery_info_layout, alignment=Qt.AlignmentFlag.AlignCenter)
+            self.current_battery_info_layout = self.update_current_battery_info_label()
+            self.layout.addWidget(self.current_battery_info_layout, alignment=Qt.AlignmentFlag.AlignCenter)
 
         func()
 
@@ -344,7 +344,7 @@ class MainWindow(QMainWindow):
         table_layout.addWidget(self.table_widget1)
         table_layout.addWidget(self.table_widget2)
 
-        layout.addLayout(table_layout)
+        self.layout.addLayout(table_layout)
 
         # Create combo box for selecting data
         self.combo_box = QComboBox()
@@ -354,12 +354,12 @@ class MainWindow(QMainWindow):
         # self.combo_box.addItem("Recent Usage")
         self.combo_box.addItem("Battery Usage")
         self.combo_box.currentIndexChanged.connect(self.update_plot)
-        layout.addWidget(self.combo_box)
+        self.layout.addWidget(self.combo_box)
 
         # Create canvas for plotting
         self.canvas = MplCanvas(self, width=5, height=4, dpi=100)
         self.ax = self.canvas.ax
-        layout.addWidget(self.canvas)
+        self.layout.addWidget(self.canvas)
 
         # Initial plot
         self.update_plot()
@@ -367,13 +367,13 @@ class MainWindow(QMainWindow):
         # Create canvas for plotting
         self.canvas_recent_usage = MplCanvas(self, width=5, height=4, dpi=100)
         self.ax_recent_usage = self.canvas_recent_usage.ax
-        layout.addWidget(self.canvas_recent_usage)
+        self.layout.addWidget(self.canvas_recent_usage)
 
         self.sl = QSlider(Qt.Orientation.Horizontal)
 
         self.plot_recent_usage()
 
-        layout.addWidget(self.sl)
+        self.layout.addWidget(self.sl)
 
         self.progress_dialog.close()
 
@@ -455,7 +455,8 @@ class MainWindow(QMainWindow):
         container.setLayout(layout)
 
         # Update the current_battery_info_layout attribute
-        self.current_battery_info_layout = container
+        # self.current_battery_info_layout = container
+        return container
 
     def setup_table_style(self, table_widget):
         pass

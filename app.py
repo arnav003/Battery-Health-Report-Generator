@@ -4,21 +4,19 @@ import json
 import os
 import requests
 import psutil
-from pathlib import Path
 import subprocess
-import mplcursors
+from pathlib import Path
+
+from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QComboBox, QTableWidget, QTableWidgetItem, \
+    QHBoxLayout, QLabel, QProgressDialog, QMenuBar, QMessageBox, QSlider, QHeaderView, QStyleFactory, QMenu, \
+    QGraphicsTextItem
+from PyQt6.QtGui import QFont, QPixmap, QIcon, QAction, QDesktopServices, QPalette, QColor, QPainter, QBrush
+from PyQt6.QtCharts import QChart, QChartView, QLineSeries, QValueAxis, QDateTimeAxis
+from PyQt6.QtCore import Qt, QTimer, QUrl, QCoreApplication, QDateTime
+
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QComboBox, QTableWidget, QTableWidgetItem, \
-    QHBoxLayout, QLabel, QProgressDialog, QMenuBar, QMessageBox, QSlider, QHeaderView, QStyleFactory, QMenu
-from PyQt6.QtGui import QFont, QPixmap, QIcon, QAction, QDesktopServices, QPalette, QColor
-from PyQt6.QtCore import Qt, QTimer, QUrl, QCoreApplication
-import matplotlib
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
-from qdarkstyle import _load_stylesheet
-from qdarkstyle.palette import Palette
 
 from load_json import load_capacity_history_from_json, load_life_estimates_from_json, load_recent_usage_from_json, \
     load_battery_usage_from_json, load_current_battery_life_estimate_from_json, read_json_file
@@ -27,14 +25,33 @@ from clean import clean_html
 from extract import extract_data
 
 # TODO: Replace with the current version
-CURRENT_VERSION = "1.6.0"
+CURRENT_VERSION = "1.7.0"
 
 
-class MplCanvas(FigureCanvas):
-    def __init__(self, parent=None, width=5, height=4, dpi=100):
-        self.fig = Figure(figsize=(width, height), dpi=dpi)
-        self.ax = self.fig.add_subplot(111)
-        super().__init__(self.fig)
+class CustomChartView(QChartView):
+    def __init__(self, chart, get_current_graph, parent=None):
+        super().__init__(chart, parent)
+        self.get_current_graph = get_current_graph
+        self.setRenderHint(QPainter.RenderHint.Antialiasing)
+        self.coord_item = QGraphicsTextItem(chart)
+        self.coord_item.setZValue(5)
+        self.coord_item.setDefaultTextColor(QColor("black"))
+        self.setMouseTracking(True)
+
+    def mouseMoveEvent(self, event):
+        pos = self.mapToScene(event.pos())
+        chart_item = self.chart().mapToValue(pos)
+        self.coord_item.setPos(pos)
+        x_val = QDateTime.fromMSecsSinceEpoch(int(chart_item.x())).toString("dd-MM-yyyy")
+        y_val = chart_item.y()
+        current_graph = self.get_current_graph()
+        if current_graph == "Battery Capacity History":
+            self.coord_item.setPlainText(f"{x_val}\n{y_val:.2f} mWh")
+        elif current_graph == "Battery Life Estimates (Active)":
+            self.coord_item.setPlainText(f"{x_val}\n{y_val:.2f} min (Active)")
+        elif current_graph == "Battery Life Estimates (Standby)":
+            self.coord_item.setPlainText(f"{x_val}\n{y_val:.2f} min (Standby)")
+        super().mouseMoveEvent(event)
 
 
 class MainWindow(QMainWindow):
@@ -44,8 +61,6 @@ class MainWindow(QMainWindow):
         # self.setGeometry(50, 50, 768, 960) # Limit the size of window
         self.resize(768, 960)
         self.theme = 'light'
-        # set_light_palette(app)
-        # apply_stylesheet(app, "accent_stylesheet.css")
         set_accent_palette(app)
 
         # palette = Palette()
@@ -338,42 +353,43 @@ class MainWindow(QMainWindow):
         self.update_timer.start(10000)  # Update every 10000 milliseconds (1 second)
 
         # Create horizontal layout for tables
-        table_layout = QHBoxLayout()
+        self.table_layout = QHBoxLayout()
 
         # Add table widgets to layout
-        table_layout.addWidget(self.table_widget1)
-        table_layout.addWidget(self.table_widget2)
+        self.table_layout.addWidget(self.table_widget1)
+        self.table_layout.addWidget(self.table_widget2)
 
-        self.layout.addLayout(table_layout)
+        self.layout.addLayout(self.table_layout)
 
         # Create combo box for selecting data
         self.combo_box = QComboBox()
         self.combo_box.addItem("Battery Capacity History")
         self.combo_box.addItem("Battery Life Estimates (Active)")
         self.combo_box.addItem("Battery Life Estimates (Standby)")
-        # self.combo_box.addItem("Recent Usage")
-        self.combo_box.addItem("Battery Usage")
         self.combo_box.currentIndexChanged.connect(self.update_plot)
         self.layout.addWidget(self.combo_box)
 
-        # Create canvas for plotting
-        self.canvas = MplCanvas(self, width=5, height=4, dpi=100)
-        self.ax = self.canvas.ax
-        self.layout.addWidget(self.canvas)
+        # Create the chart and add it to the layout
+        self.chart = QChart()
+        self.chart_view = CustomChartView(self.chart, self.get_current_graph)
+        self.layout.addWidget(self.chart_view)
+
+        # List to keep track of axes
+        self.current_axes = []
 
         # Initial plot
         self.update_plot()
 
         # Create canvas for plotting
-        self.canvas_recent_usage = MplCanvas(self, width=5, height=4, dpi=100)
-        self.ax_recent_usage = self.canvas_recent_usage.ax
-        self.layout.addWidget(self.canvas_recent_usage)
+        # self.canvas_recent_usage = MplCanvas(self, width=5, height=4, dpi=100)
+        # self.ax_recent_usage = self.canvas_recent_usage.ax
+        # self.layout.addWidget(self.canvas_recent_usage)
 
-        self.sl = QSlider(Qt.Orientation.Horizontal)
+        # self.sl = QSlider(Qt.Orientation.Horizontal)
 
-        self.plot_recent_usage()
+        # self.plot_recent_usage()
 
-        self.layout.addWidget(self.sl)
+        # self.layout.addWidget(self.sl)
 
         self.progress_dialog.close()
 
@@ -499,9 +515,20 @@ class MainWindow(QMainWindow):
             table_widget.setItem(row, 0, key_item)
             table_widget.setItem(row, 1, value_item)
 
+    def get_current_graph(self):
+        return self.combo_box.currentText()
+
+    def clear_axes(self):
+        for axis in self.current_axes:
+            self.chart.removeAxis(axis)
+        self.current_axes = []
+
     def update_plot(self):
-        self.ax.clear()
-        selected_data = self.combo_box.currentText()
+        # Clear previous chart data
+        self.chart.removeAllSeries()
+        self.clear_axes()
+
+        selected_data = self.get_current_graph()
 
         if selected_data == "Battery Capacity History":
             self.plot_capacity_history()
@@ -509,34 +536,47 @@ class MainWindow(QMainWindow):
             self.plot_life_estimates('active')
         elif selected_data == "Battery Life Estimates (Standby)":
             self.plot_life_estimates('standby')
-        # elif selected_data == 'Recent Usage':
-        #     self.plot_recent_usage()
-        elif selected_data == 'Battery Usage':
-            self.plot_battery_usage()
-
-        # Adjust layout to make room for the labels
-        self.canvas.figure.tight_layout()
-
-        self.canvas.draw()
 
     def plot_capacity_history(self):
         x_values = np.asarray(self.capacity_df['START DATE'])
         y_values = self.capacity_df['FULL CHARGE CAPACITY']
-        line, = self.ax.plot(x_values, y_values)
-        self.ax.set_title('Battery Capacity History')
-        self.ax.set_xlabel('Date')
-        self.ax.set_ylabel('Full Charge Capacity (mWh)')
 
-        #  Adjust the limits of y-axis
-        # self.ax.set_ylim(0, self.capacity_df['DESIGN CAPACITY'][0])
+        series = QLineSeries()
+        for date, value in zip(x_values, y_values):
+            datetime_obj = pd.to_datetime(date).to_pydatetime()
+            series.append(QDateTime(datetime_obj).toMSecsSinceEpoch(), value)
 
-        # Angle the x-axis labels
-        self.ax.set_xticklabels(self.ax.get_xticklabels(), rotation=45, ha='right')
+        # Customize series
+        series.setColor(QColor("#0078d7"))
+        series.setPointsVisible(True)
 
-        # Make the plot interactive
-        cursor = mplcursors.cursor(line, hover=True)
-        cursor.connect("add", lambda sel: sel.annotation.set_text(
-            f'{(matplotlib.dates.num2date(sel.target[0])).strftime("%Y-%m-%d")}\n{int(sel.target[1])} mWh'))
+        self.chart.addSeries(series)
+        self.chart.setAnimationOptions(QChart.AnimationOption.SeriesAnimations)
+
+        # Create and customize x-axis as QDateTimeAxis
+        axis_x = QDateTimeAxis()
+        axis_x.setTitleText("Date")
+        axis_x.setFormat("dd-MM-yyyy")
+        axis_x.setLabelsAngle(-45)
+        axis_x.setTickCount(10)  # Adjust number of ticks as needed
+
+        # Create and customize y-axis as QValueAxis
+        axis_y = QValueAxis()
+        axis_y.setTitleText("Full Charge Capacity (mWh)")
+
+        self.chart.addAxis(axis_x, Qt.AlignmentFlag.AlignBottom)
+        self.chart.addAxis(axis_y, Qt.AlignmentFlag.AlignLeft)
+
+        series.attachAxis(axis_x)
+        series.attachAxis(axis_y)
+
+        # Add axes to current_axes list
+        self.current_axes.extend([axis_x, axis_y])
+
+        # Customize chart
+        self.chart.setTitle('Battery Capacity History')
+        self.chart.setBackgroundBrush(QColor("#f0f0f0"))
+        self.chart.setTitleFont(QFont("Arial", 14, QFont.Weight.Bold))
 
     def plot_life_estimates(self, state):
         x_values = np.asarray(self.capacity_df['START DATE'])
@@ -547,31 +587,51 @@ class MainWindow(QMainWindow):
         if state == 'active':
             columns_to_plot = ['ACTIVE (FULL CHARGE)', 'ACTIVE (DESIGN CAPACITY)']
             design_capacity_estimate = data["ACTIVE (DESIGN CAPACITY)"][0]
-            self.ax.set_title('Battery Life Estimates (Active)')
+            self.chart.setTitle('Battery Life Estimates (Active)')
         elif state == 'standby':
             columns_to_plot = ['CONNECTED STANDBY (FULL CHARGE) (time)', 'CONNECTED STANDBY (DESIGN CAPACITY) (time)']
             design_capacity_estimate = data["CONNECTED STANDBY (DESIGN CAPACITY)"][0]
-            self.ax.set_title('Battery Life Estimates (Standby)')
+            self.chart.setTitle('Battery Life Estimates (Standby)')
 
         y_values_in_sec = (self.life_estimates_df[columns_to_plot[0]] / self.life_estimates_df[
             columns_to_plot[1]]) * design_capacity_estimate
         y_values = y_values_in_sec / 60
 
-        line, = self.ax.plot(x_values, y_values)
+        series = QLineSeries()
+        for date, value in zip(x_values, y_values):
+            datetime_obj = pd.to_datetime(date).to_pydatetime()
+            series.append(QDateTime(datetime_obj).toMSecsSinceEpoch(), value)
 
-        # self.ax.legend(loc="upper right")
-        self.ax.set_ylabel('Drain Time (in minutes)')
+        # Customize series
+        series.setColor(QColor("#0078d7"))
+        series.setPointsVisible(True)
 
-        # Set common xlabel
-        self.ax.set_xlabel('Period')
+        self.chart.addSeries(series)
+        self.chart.setAnimationOptions(QChart.AnimationOption.SeriesAnimations)
 
-        # Rotate x-axis labels for better readability
-        self.ax.set_xticklabels(self.ax.get_xticklabels(), rotation=45, ha='right')
+        # Create and customize x-axis as QDateTimeAxis
+        axis_x = QDateTimeAxis()
+        axis_x.setTitleText("Date")
+        axis_x.setFormat("dd-MM-yyyy")
+        axis_x.setLabelsAngle(-45)
+        axis_x.setTickCount(10)  # Adjust number of ticks as needed
 
-        # Make the plot interactive
-        cursor = mplcursors.cursor(line, hover=True)
-        cursor.connect("add", lambda sel: sel.annotation.set_text(
-            f'{(matplotlib.dates.num2date(sel.target[0])).strftime("%Y-%m-%d")}\n{int(sel.target[1])} min'))
+        # Create and customize y-axis as QValueAxis
+        axis_y = QValueAxis()
+        axis_y.setTitleText("Drain Time (in minutes)")
+
+        self.chart.addAxis(axis_x, Qt.AlignmentFlag.AlignBottom)
+        self.chart.addAxis(axis_y, Qt.AlignmentFlag.AlignLeft)
+
+        series.attachAxis(axis_x)
+        series.attachAxis(axis_y)
+
+        # Add axes to current_axes list
+        self.current_axes.extend([axis_x, axis_y])
+
+        # Customize chart
+        self.chart.setBackgroundBrush(QColor("#f0f0f0"))
+        self.chart.setTitleFont(QFont("Arial", 14, QFont.Weight.Bold))
 
     def plot_recent_usage(self):
         df = self.recent_usage_df
@@ -704,18 +764,18 @@ def set_accent_palette(app):
     # Base colors
     palette.setColor(QPalette.ColorRole.Window, QColor(245, 245, 245))  # Light gray background
     palette.setColor(QPalette.ColorRole.WindowText, QColor(30, 30, 30))  # Dark text
-    palette.setColor(QPalette.ColorRole.Base, QColor(255, 255, 255))     # White for input fields
+    palette.setColor(QPalette.ColorRole.Base, QColor(255, 255, 255))  # White for input fields
     palette.setColor(QPalette.ColorRole.AlternateBase, QColor(240, 240, 240))  # Slightly darker for alternate rows
     palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(255, 255, 255))
     palette.setColor(QPalette.ColorRole.ToolTipText, QColor(30, 30, 30))
     palette.setColor(QPalette.ColorRole.Text, QColor(30, 30, 30))
     palette.setColor(QPalette.ColorRole.Button, QColor(240, 240, 240))
     palette.setColor(QPalette.ColorRole.ButtonText, QColor(30, 30, 30))
-    palette.setColor(QPalette.ColorRole.BrightText, QColor(255, 0, 0))   # Red for bright text
+    palette.setColor(QPalette.ColorRole.BrightText, QColor(255, 0, 0))  # Red for bright text
 
     # Highlight colors
     palette.setColor(QPalette.ColorRole.Highlight, QColor(0, 122, 204))  # Accent color for highlights
-    palette.setColor(QPalette.ColorRole.Accent, QColor(0, 122, 204))     # Accent color for focus
+    palette.setColor(QPalette.ColorRole.Accent, QColor(0, 122, 204))  # Accent color for focus
     palette.setColor(QPalette.ColorRole.HighlightedText, QColor(255, 255, 255))  # White text on highlight
 
     # Menubar colors

@@ -173,7 +173,7 @@ def load_current_battery_life_estimate_from_json(json_file):
 if __name__ == "__main__":
     pass
     # capacity_history_df = load_capacity_history_from_json('data/battery-capacity-history.json')
-    # print(capacity_history_df)
+    # print(capacity_history_df['FULL CHARGE CAPACITY'])
     # df = load_life_estimates_from_json('data/battery-life-estimates.json')
     # print(df.iloc[0])
     # data = read_json_file('data/battery-report.json')

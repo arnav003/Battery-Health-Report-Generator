@@ -113,7 +113,7 @@ QComboBox::drop-down {
 }
 
 QComboBox::down-arrow {
-    image: url(down_arrow.png); /* Ensure you have a suitable arrow icon */
+    image: url(down_arrow_16x16.png); /* Ensure you have a suitable arrow icon */
 }
 
 /* QTableWidget Styling */

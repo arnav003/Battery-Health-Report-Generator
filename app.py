@@ -418,7 +418,7 @@ class MainWindow(QMainWindow):
         return battery_health_percentage
 
     def update_battery_health_label(self):
-        battery_health_icon = QPixmap('battery_icon.png')
+        battery_health_icon = QPixmap('icons/battery_icon.png')
         icon_label = QLabel()
         icon_label.setPixmap(battery_health_icon.scaled(50, 50, Qt.AspectRatioMode.KeepAspectRatio,
                                                         Qt.TransformationMode.SmoothTransformation))
@@ -816,7 +816,7 @@ def set_light_palette(app):
 
     app.setPalette(palette)
 
-    apply_stylesheet(app, "light_stylesheet.css")
+    apply_stylesheet(app, "stylesheets/light_stylesheet.css")
 
 
 def set_accent_palette(app):
@@ -848,7 +848,7 @@ def set_accent_palette(app):
 
     app.setPalette(palette)
 
-    apply_stylesheet(app, "accent_stylesheet.css")
+    apply_stylesheet(app, "stylesheets/accent_stylesheet.css")
 
 
 def set_dark_palette(app):
@@ -872,14 +872,14 @@ def set_dark_palette(app):
 
     app.setPalette(palette)
 
-    apply_stylesheet(app, "dark_stylesheet.css")
+    apply_stylesheet(app, "stylesheets/dark_stylesheet.css")
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    app.setWindowIcon(QIcon('app_icon.ico'))
+    app.setWindowIcon(QIcon('icons/app_icon.ico'))
     app.setStyle(QStyleFactory.create("windows11"))  # ['windows11', 'windowsvista', 'Windows', 'Fusion']
-    # apply_stylesheet(app, "custom_stylesheet.css")
+    # apply_stylesheet(app, "stylesheets/custom_stylesheet.css")
     window = MainWindow()
     window.show()
     sys.exit(app.exec())

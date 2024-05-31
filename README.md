@@ -1,5 +1,5 @@
 <h1>Battery Health Report Generator</h1>
-<img src="app_icon.jpeg" alt="App Icon" height="300">
+<img src="icons/app_icon.jpeg" alt="App Icon" height="300">
 
 <h2>To Create Dist Folder</h2>
 <pre><code>pyinstaller --name="Battery Health Report Generator" --icon="app_icon.ico" --add-data="battery_icon.png;." --add-data="app_icon.ico;." --windowed --onedir --contents-directory "." app.py clean.py extract.py generate.py load_json.py</code></pre>
@@ -15,12 +15,12 @@
 <div class="theme-images">
 
 <h3>Light Theme</h3>
-    <img src="design-light-1.png" alt="Design Light">
+    <img src="images/design-light-1.png" alt="Design Light">
     
 <h3>Dark Theme</h3>
-    <img src="design-dark-1.png" alt="Design Dark">
+    <img src="images/design-dark-1.png" alt="Design Dark">
 
 <h3>Accent Theme</h3>
-    <img src="design-accent-1.png" alt="Design Accent">
+    <img src="images/design-accent-1.png" alt="Design Accent">
 
 </div>

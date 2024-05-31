@@ -5,16 +5,15 @@ import os
 import requests
 import psutil
 import subprocess
-import pytz
 from pathlib import Path
 
 from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QComboBox, QTableWidget, QTableWidgetItem, \
     QHBoxLayout, QLabel, QProgressDialog, QMenuBar, QMessageBox, QSlider, QHeaderView, QStyleFactory, QMenu, \
-    QGraphicsTextItem, QScrollArea
-from PyQt6.QtGui import QFont, QPixmap, QIcon, QAction, QDesktopServices, QPalette, QColor, QPainter, QBrush, QPen
+    QGraphicsTextItem, QScrollArea, QGraphicsRectItem
+from PyQt6.QtGui import QFont, QPixmap, QIcon, QAction, QDesktopServices, QPalette, QColor, QPainter
 from PyQt6.QtCharts import QChart, QChartView, QLineSeries, QBarSet, QBarSeries, QValueAxis, QDateTimeAxis, \
     QBarCategoryAxis
-from PyQt6.QtCore import Qt, QTimer, QUrl, QCoreApplication, QDateTime, QTimeZone, QByteArray
+from PyQt6.QtCore import Qt, QTimer, QUrl, QCoreApplication, QDateTime, QRectF
 
 import numpy as np
 import pandas as pd
@@ -35,34 +34,82 @@ class CustomChartView(QChartView):
         super().__init__(chart, parent)
         self.get_current_graph = get_current_graph
         self.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        # Coordinate display item
         self.coord_item = QGraphicsTextItem(chart)
         self.coord_item.setZValue(5)
         self.coord_item.setDefaultTextColor(QColor("black"))
+        font = QFont("Arial", 10)
+        self.coord_item.setFont(font)
+
+        # Background rectangle for the text
+        self.bg_rect = QGraphicsRectItem(chart)
+        self.bg_rect.setZValue(4)
+        self.bg_rect.setBrush(QColor(255, 255, 255, 200))  # White with transparency
+        self.bg_rect.setPen(QColor(0, 0, 0, 0))  # No border
+
         self.setMouseTracking(True)
 
     def mouseMoveEvent(self, event):
         pos = self.mapToScene(event.pos())
         chart_item = self.chart().mapToValue(pos)
-        self.coord_item.setPos(pos)
+
         x_val = QDateTime.fromMSecsSinceEpoch(int(chart_item.x())).toString("dd-MM-yyyy")
-        y_val = chart_item.y()
+        y_val = int(chart_item.y())
         current_graph = self.get_current_graph()
+
         if current_graph == "Battery Capacity History":
-            self.coord_item.setPlainText(f"{x_val}\n{y_val:.2f} mWh")
+            y_val = y_val / 1000
+            text = f"{x_val}\n{y_val:.2f} Wh"
         elif current_graph == "Battery Life Estimates (Active)":
-            self.coord_item.setPlainText(f"{x_val}\n{y_val:.2f} min (Active)")
+            text = f"{x_val}\n"
+            if y_val >= 60:
+                hr = int(y_val / 60)
+                text += f"{hr} hr "
+                min = int(y_val % 60)
+            else:
+                min = y_val
+            text += f"{min} min (Active)"
         elif current_graph == "Battery Life Estimates (Standby)":
-            self.coord_item.setPlainText(f"{x_val}\n{y_val:.2f} min (Standby)")
+            text = f"{x_val}\n"
+            if y_val >= 60:
+                hr = int(y_val / 60)
+                text += f"{hr} hr "
+                min = int(y_val % 60)
+            else:
+                min = y_val
+            text += f"{min} min (Standby)"
+        else:
+            text = ""
+
+        self.coord_item.setPlainText(text)
+
+        # Set the position of the text item
+        self.coord_item.setPos(pos.x() + 15, pos.y() - 30)
+
+        # Update the background rectangle
+        text_rect = self.coord_item.boundingRect()
+        self.bg_rect.setRect(text_rect.adjusted(-5, -5, 5, 5))  # Add padding
+        self.bg_rect.setPos(pos.x() + 15, pos.y() - 30)
+
         super().mouseMoveEvent(event)
+
+    def leaveEvent(self, event):
+        self.coord_item.setPlainText("")
+        self.bg_rect.setRect(QRectF())
+        super().leaveEvent(event)
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('Battery Health Report Generator')
-        # self.setGeometry(50, 50, 768, 960) # Limit the size of window
-        self.resize(768, 960)
-        self.theme = 'light'
+
+        # Set the size of the window on initialization
+        self.setGeometry(50, 50, 768, 768)
+
+        # Set the default theme on initialization
+        self.theme = 'accent'
         set_accent_palette(app)
 
         # palette = Palette()
@@ -348,20 +395,6 @@ class MainWindow(QMainWindow):
         self.battery_health_layout = self.update_battery_health_label()
         self.layout.addWidget(self.battery_health_layout, alignment=Qt.AlignmentFlag.AlignCenter)
 
-        # Add current battery percentage and charging state
-        self.current_battery_info_layout = None
-
-        def func():
-            self.current_battery_info_layout = self.update_current_battery_info_label()
-            self.layout.addWidget(self.current_battery_info_layout, alignment=Qt.AlignmentFlag.AlignCenter)
-
-        func()
-
-        # Add a QTimer instance as a class variable
-        self.update_timer = QTimer(self)
-        self.update_timer.timeout.connect(func)
-        self.update_timer.start(10000)  # Update every 10000 milliseconds (1 second)
-
         # Create horizontal layout for tables
         self.table_layout = QHBoxLayout()
 
@@ -406,6 +439,20 @@ class MainWindow(QMainWindow):
         self.layout.addWidget(self.sl)
 
         self.plot_recent_usage()
+
+        # Add current battery percentage and charging state
+        self.current_battery_info_layout = None
+
+        def func():
+            self.current_battery_info_layout = self.update_current_battery_info_label()
+            self.layout.addWidget(self.current_battery_info_layout, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        func()
+
+        # Add a QTimer instance as a class variable
+        self.update_timer = QTimer(self)
+        self.update_timer.timeout.connect(func)
+        self.update_timer.start(10000)  # Update every 10000 milliseconds (1 second)
 
         self.progress_dialog.close()
 

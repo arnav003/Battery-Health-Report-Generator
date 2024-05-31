@@ -106,7 +106,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle('Battery Health Report Generator')
 
         # Set the size of the window on initialization
-        self.setGeometry(50, 50, 768, 768)
+        self.setGeometry(500, 100, 1024, 832)
 
         # Set the default theme on initialization
         self.theme = 'accent'
@@ -141,6 +141,20 @@ class MainWindow(QMainWindow):
         else:
             # Load all data into widgets
             self.load_data()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+
+        # Update the maximum width of suggestion_label based on the window width
+        if self.centralWidget() is not None:
+            widget_width = self.centralWidget().width()
+            widget_heigth = self.centralWidget().height()
+
+            # Set maximum width of suggestion label to 75% of the window width
+            suggestion_label = self.centralWidget().findChild(QLabel, "SuggestionLabel")
+            max_label_width = int(widget_width * 0.75)
+            if suggestion_label is not None:
+                suggestion_label.setMaximumWidth(max_label_width)
 
     def create_menu_bar(self):
         menu_bar = QMenuBar()
@@ -227,7 +241,14 @@ class MainWindow(QMainWindow):
             set_accent_palette(app)
 
     def show_about_dialog(self):
-        about_text = "Battery Health Report Generator\n\nCreated by Lala Arnav Vatsal\narnav.vatsal2213@gmail.com\n\nThis application provides detailed battery health reports and analysis."
+        about_text = (
+            f"<h2 style='color: #6957db;'>Battery Health Report Generator v{CURRENT_VERSION}</h2>"
+            "<p>Created by <b>Lala Arnav Vatsal</b></p>"
+            "<p>Email: <a href='mailto:arnav.vatsal2213@gmail.com'>arnav.vatsal2213@gmail.com</a></p>"
+            "<p>LinkedIn: <a href='https://www.linkedin.com/in/lala-arnav-vatsal/'>Lala Arnav Vatsal</a></p>"
+            "<p>This application provides detailed battery health reports and analysis.</p>"
+            "<p>Visit our <a href='https://arnav003.github.io/battery-health'>product website</a> for more information.</p>"
+        )
         QMessageBox.about(self, "About Us", about_text)
 
     def check_for_updates(self):
@@ -380,11 +401,12 @@ class MainWindow(QMainWindow):
         # Create scroll area
         self.main_window_scroll = QScrollArea()
         self.main_window_scroll.setWidgetResizable(True)
+        self.main_window_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.main_window_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setCentralWidget(self.main_window_scroll)
 
         # Create central widget
         self.central_widget = QWidget()
-        # self.setCentralWidget(self.central_widget)
         self.main_window_scroll.setWidget(self.central_widget)
 
         # Create layout
@@ -394,6 +416,10 @@ class MainWindow(QMainWindow):
         # Add battery health icon and percentage
         self.battery_health_layout = self.update_battery_health_label()
         self.layout.addWidget(self.battery_health_layout, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        # Add suggestion
+        self.suggestion_label = self.get_suggestion_label()
+        self.layout.addWidget(self.suggestion_label, alignment=Qt.AlignmentFlag.AlignCenter)
 
         # Create horizontal layout for tables
         self.table_layout = QHBoxLayout()
@@ -426,7 +452,7 @@ class MainWindow(QMainWindow):
         # Create the chart and add it to the layout
         self.chart = QChart()
         self.chart_view = CustomChartView(self.chart, self.get_current_graph)
-        self.chart_view.setMinimumHeight(300)
+        self.chart_view.setMinimumHeight(500)
         self.layout.addWidget(self.chart_view)
 
         # List to keep track of axes
@@ -438,7 +464,7 @@ class MainWindow(QMainWindow):
         # Create the chart and add it to the layout
         self.recent_usage_chart = QChart()
         self.recent_usage_chart_view = QChartView(self.recent_usage_chart)
-        self.recent_usage_chart_view.setMinimumHeight(300)
+        self.recent_usage_chart_view.setMinimumHeight(500)
         self.recent_usage_chart_view.setRenderHint(QPainter.RenderHint.Antialiasing)
         self.layout.addWidget(self.recent_usage_chart_view)
 
@@ -498,19 +524,58 @@ class MainWindow(QMainWindow):
         layout.addWidget(percentage_label)
 
         container = QWidget()
-        container.setToolTip(f'Battery Health: {self.battery_health_percentage:.2f}%')
 
         container.setStyleSheet(f"""
             color: #fff;
             background: #6957db;
-            border-radius: 25px;
-            padding-top: 0px;
-            padding-bottom: 0px;
-            padding-left: 15px;
-            padding-right: 15px;
+            border-radius: 30px;
             font-weight: bold;
         """)
-        
+
+        container.setLayout(layout)
+
+        return container
+
+    def get_suggestion_label(self):
+        suggestion_icon = QPixmap('icons/i_icon.png')
+        suggestion_label_icon = QLabel()
+        suggestion_label_icon.setPixmap(suggestion_icon.scaled(26, 26, Qt.AspectRatioMode.KeepAspectRatio,
+                                                               Qt.TransformationMode.SmoothTransformation))
+
+        if self.battery_health_percentage > 75:
+            suggestion_text = "Battery Health: Excellent - Your battery is in great condition."
+        elif 50 < self.battery_health_percentage <= 75:
+            suggestion_text = "Battery Health: Good - Your battery is still healthy, but consider optimizing usage to maintain its condition."
+        elif 25 < self.battery_health_percentage <= 50:
+            suggestion_text = "Battery Health: Fair - Your battery health is moderate. Try reducing usage or adjusting settings to prolong battery life."
+        else:
+            suggestion_text = "Battery Health: Poor - Your battery health is low. Consider replacing your battery or seeking professional assistance."
+
+        suggestion_label = QLabel()
+        suggestion_label.setTextFormat(Qt.TextFormat.RichText)
+        suggestion_label.setText(suggestion_text)
+        suggestion_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        # suggestion_label.setWordWrap(True)
+        suggestion_label.setMinimumWidth(512)
+        suggestion_label.setObjectName("SuggestionLabel")
+
+        suggestion_label.setStyleSheet('''
+        color: #ffeb3b;
+        font-weight: bold;    
+        ''')
+
+        layout = QHBoxLayout()
+        layout.addWidget(suggestion_label_icon)
+        layout.addWidget(suggestion_label)
+
+        container = QWidget()
+
+        container.setStyleSheet(f"""
+                    background: #6957db;
+                    border-radius: 15px;
+                    font-weight: bold;
+                """)
+
         container.setLayout(layout)
 
         return container
@@ -544,18 +609,17 @@ class MainWindow(QMainWindow):
         # Calculate current battery info
         self.current_battery_info = self.get_current_battery_info()
 
-        current_percentage_label = QLabel(f'Battery Percent: {self.current_battery_info["Percent"]:.2f}%')
-        current_percentage_label.setFont(QFont('Arial', 16))
-        current_percentage_label.setStyleSheet("color: green;")
+        current_percentage_label = QLabel(f'Battery Percent: {self.current_battery_info["Percent"]}%')
 
         charging_state_label = QLabel(f'Plugged in: {self.current_battery_info["Plugged in"]}')
-        charging_state_label.setFont(QFont('Arial', 16))
-        charging_state_label.setStyleSheet("color: green;")
 
         estimated_remaining_time_label = QLabel(
             f'Estimated remaining time: {self.current_battery_info["Seconds left"]}')
-        estimated_remaining_time_label.setFont(QFont('Arial', 16))
-        estimated_remaining_time_label.setStyleSheet("color: green;")
+
+        # Apply styles
+        self.apply_label_style(current_percentage_label, self.current_battery_info["Percent"])
+        self.apply_label_style(charging_state_label)
+        self.apply_label_style(estimated_remaining_time_label)
 
         layout = QHBoxLayout()
         layout.addWidget(current_percentage_label)
@@ -565,9 +629,21 @@ class MainWindow(QMainWindow):
         container = QWidget()
         container.setLayout(layout)
 
-        # Update the current_battery_info_layout attribute
-        # self.current_battery_info_layout = container
         return container
+
+    def apply_label_style(self, label, value=None):
+        # Apply common style
+        label.setFont(QFont('Arial', 16))
+        label.setAlignment(Qt.AlignmentFlag.AlignLeft)
+
+        # Apply specific style based on value (e.g., battery percentage)
+        if value is not None:
+            if value > 75:
+                label.setStyleSheet("color: #27ae60;")  # Green
+            elif value > 25:
+                label.setStyleSheet("color: #f39c12;")  # Orange
+            else:
+                label.setStyleSheet("color: #e74c3c;")  # Red
 
     def setup_table_style(self, table_widget):
         pass
@@ -789,7 +865,14 @@ class MainWindow(QMainWindow):
 
         # Populate bar sets
         for i in range(pos, pos + self.hours_to_show):
-            time = self.recent_usage_df['START TIME'].iloc[i].strftime("%H:%M")
+            time = self.recent_usage_df['START TIME'].iloc[i]
+
+            current_date = datetime.datetime.now().date()
+
+            if time.date() == current_date:
+                time = time.strftime("%H:%M")
+            else:
+                time = time.strftime("%d-%m %H:%M")
 
             capacity = self.recent_usage_df['CAPACITY REMAINING (%)'].iloc[i]
 

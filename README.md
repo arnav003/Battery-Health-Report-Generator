@@ -2,7 +2,7 @@
 <img src="icons/app_icon.jpeg" alt="App Icon" height="300">
 
 <h2>To Create Dist Folder</h2>
-<pre><code>pyinstaller --name="Battery Health Report Generator" --icon="app_icon.ico" --add-data="battery_icon.png;." --add-data="app_icon.ico;." --windowed --onedir --contents-directory "." app.py clean.py extract.py generate.py load_json.py</code></pre>
+<pre><code>pyinstaller --name="Battery Health Report Generator" --icon="icons/app_icon.ico" --add-data="icons;icons" --add-data="stylesheets;stylesheets" --windowed --onedir --contents-directory "." app.py clean.py extract.py generate.py load_json.py</code></pre>
 
 <div class="note">
     <h3>Note:</h3>

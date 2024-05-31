@@ -106,14 +106,46 @@ QComboBox {
     border: 1px solid rgb(200, 200, 200);
     border-radius: 4px;
     padding: 4px 10px;
+    selection-background-color: rgb(230, 230, 230);
+    selection-color: black;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+}
+
+QComboBox:focus {
+    border: 1px solid rgb(100, 150, 200);
+    background-color: rgb(240, 240, 255);
+}
+
+QComboBox:hover {
+    border: 1px solid rgb(150, 150, 200);
 }
 
 QComboBox::drop-down {
-    border-left: none;
+    border: none;
+    width: 30px; /* Adjust width for better appearance */
 }
 
 QComboBox::down-arrow {
     image: url(icons/down_arrow_16x16.png); /* Ensure you have a suitable arrow icon */
+    width: 16px;
+    height: 16px;
+}
+
+QComboBox QAbstractItemView {
+    border: 1px solid rgb(200, 200, 200);
+    selection-background-color: rgb(100, 150, 200);
+    selection-color: white;
+    background-color: white;
+    padding: 4px;
+    outline: 0; /* Remove outline to avoid unwanted borders */
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+}
+
+QComboBox::item {
+    height: 30px; /* Adjust height for better appearance */
+    padding: 0 10px;
 }
 
 /* QTableWidget Styling */

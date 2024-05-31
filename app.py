@@ -10,10 +10,10 @@ from pathlib import Path
 from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QComboBox, QTableWidget, QTableWidgetItem, \
     QHBoxLayout, QLabel, QProgressDialog, QMenuBar, QMessageBox, QSlider, QHeaderView, QStyleFactory, QMenu, \
     QGraphicsTextItem, QScrollArea, QGraphicsRectItem
-from PyQt6.QtGui import QFont, QPixmap, QIcon, QAction, QDesktopServices, QPalette, QColor, QPainter
+from PyQt6.QtGui import QFont, QPixmap, QIcon, QAction, QDesktopServices, QPalette, QColor, QPainter, QMovie
 from PyQt6.QtCharts import QChart, QChartView, QLineSeries, QBarSet, QBarSeries, QValueAxis, QDateTimeAxis, \
     QBarCategoryAxis
-from PyQt6.QtCore import Qt, QTimer, QUrl, QCoreApplication, QDateTime, QRectF
+from PyQt6.QtCore import Qt, QTimer, QUrl, QCoreApplication, QDateTime, QRectF, QPropertyAnimation, QSize
 
 import numpy as np
 import pandas as pd
@@ -410,7 +410,18 @@ class MainWindow(QMainWindow):
         self.combo_box.addItem("Battery Life Estimates (Active)")
         self.combo_box.addItem("Battery Life Estimates (Standby)")
         self.combo_box.currentIndexChanged.connect(self.update_plot)
-        self.layout.addWidget(self.combo_box)
+
+        self.combo_box_label = QLabel("Choose the graph to display: ")
+
+        # Create a horizontal layout to center the combo box
+        self.combo_box_layout = QHBoxLayout()
+        self.combo_box_layout.addStretch(1)  # Add stretchable space before the combo box
+        self.combo_box_layout.addWidget(self.combo_box_label)
+        self.combo_box_layout.addWidget(self.combo_box)
+        self.combo_box_layout.addStretch(1)  # Add stretchable space after the combo box
+
+        self.layout.addLayout(self.combo_box_layout)
+        self.layout.addStretch(1)  # Add stretchable space after the combo box to push it up
 
         # Create the chart and add it to the layout
         self.chart = QChart()
@@ -465,20 +476,41 @@ class MainWindow(QMainWindow):
         return battery_health_percentage
 
     def update_battery_health_label(self):
-        battery_health_icon = QPixmap('icons/battery_icon.png')
+        battery_health_icon = 'icons/battery-animation-transparent-cropped.gif'
+
         icon_label = QLabel()
-        icon_label.setPixmap(battery_health_icon.scaled(50, 50, Qt.AspectRatioMode.KeepAspectRatio,
-                                                        Qt.TransformationMode.SmoothTransformation))
+        icon_movie = QMovie(battery_health_icon)
+        icon_movie.setScaledSize(QSize(48, 48))
+        icon_label.setMovie(icon_movie)
+        icon_movie.start()
+
+        # battery_health_icon = QPixmap('icons/battery_icon.png')
+        #
+        # icon_label = QLabel()
+        # icon_label.setPixmap(battery_health_icon.scaled(50, 50, Qt.AspectRatioMode.KeepAspectRatio,
+        #                                                 Qt.TransformationMode.SmoothTransformation))
 
         percentage_label = QLabel(f'Battery Health: {self.battery_health_percentage:.2f}%')
         percentage_label.setFont(QFont('Arial', 16))
-        percentage_label.setStyleSheet("color: green;")
 
         layout = QHBoxLayout()
         layout.addWidget(icon_label)
         layout.addWidget(percentage_label)
 
         container = QWidget()
+        container.setToolTip(f'Battery Health: {self.battery_health_percentage:.2f}%')
+
+        container.setStyleSheet(f"""
+            color: #fff;
+            background: #6957db;
+            border-radius: 25px;
+            padding-top: 0px;
+            padding-bottom: 0px;
+            padding-left: 15px;
+            padding-right: 15px;
+            font-weight: bold;
+        """)
+        
         container.setLayout(layout)
 
         return container

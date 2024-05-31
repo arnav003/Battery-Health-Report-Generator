@@ -26,7 +26,7 @@ from clean import clean_html
 from extract import extract_data
 
 # TODO: Replace with the current version
-CURRENT_VERSION = "1.7.0"
+CURRENT_VERSION = "2.0.0"
 
 
 class CustomChartView(QChartView):

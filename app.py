@@ -5,14 +5,16 @@ import os
 import requests
 import psutil
 import subprocess
+import pytz
 from pathlib import Path
 
 from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QComboBox, QTableWidget, QTableWidgetItem, \
     QHBoxLayout, QLabel, QProgressDialog, QMenuBar, QMessageBox, QSlider, QHeaderView, QStyleFactory, QMenu, \
     QGraphicsTextItem, QScrollArea
-from PyQt6.QtGui import QFont, QPixmap, QIcon, QAction, QDesktopServices, QPalette, QColor, QPainter, QBrush
-from PyQt6.QtCharts import QChart, QChartView, QLineSeries, QBarSet, QBarSeries, QValueAxis, QDateTimeAxis
-from PyQt6.QtCore import Qt, QTimer, QUrl, QCoreApplication, QDateTime
+from PyQt6.QtGui import QFont, QPixmap, QIcon, QAction, QDesktopServices, QPalette, QColor, QPainter, QBrush, QPen
+from PyQt6.QtCharts import QChart, QChartView, QLineSeries, QBarSet, QBarSeries, QValueAxis, QDateTimeAxis, \
+    QBarCategoryAxis
+from PyQt6.QtCore import Qt, QTimer, QUrl, QCoreApplication, QDateTime, QTimeZone, QByteArray
 
 import numpy as np
 import pandas as pd
@@ -333,7 +335,6 @@ class MainWindow(QMainWindow):
         self.main_window_scroll.setWidgetResizable(True)
         self.setCentralWidget(self.main_window_scroll)
 
-
         # Create central widget
         self.central_widget = QWidget()
         # self.setCentralWidget(self.central_widget)
@@ -533,15 +534,20 @@ class MainWindow(QMainWindow):
     def get_current_graph(self):
         return self.combo_box.currentText()
 
-    def clear_axes(self, chart, axes):
-        for axis in axes:
-            chart.removeAxis(axis)
-        axes = []
+    def clear_axes(self):
+        for axis in self.current_axes:
+            self.chart.removeAxis(axis)
+        self.current_axes = []
+
+    def recent_usage_clear_axes(self):
+        for axis in self.recent_usage_current_axes:
+            self.recent_usage_chart.removeAxis(axis)
+        self.recent_usage_current_axes = []
 
     def update_plot(self):
         # Clear previous chart data
         self.chart.removeAllSeries()
-        self.clear_axes(self.chart, self.current_axes)
+        self.clear_axes()
 
         selected_data = self.get_current_graph()
 
@@ -679,79 +685,65 @@ class MainWindow(QMainWindow):
 
         self.recent_usage_df = df_resampled
 
+        self.hours_to_show = 12
+
         # Adding scroll functionality
         self.sl.setMinimum(0)
-        self.sl.setMaximum(len(df_resampled) - 24)
+        self.sl.setMaximum(len(df_resampled) - self.hours_to_show)
         self.sl.setTickPosition(QSlider.TickPosition.TicksBelow)
-        self.sl.setTickInterval(24)
+        self.sl.setTickInterval(6)
 
         self.sl.valueChanged.connect(self.update_recent_usage)
-        self.sl.setValue(len(df_resampled) - 24)
-
-        # Initial plot
-        self.update_recent_usage()
-
-    # def update_recent_usage(self):
-    #     pos = int(self.sl.value())
-    #     self.ax_recent_usage.clear()
-    #
-    #     # Plotting the data
-    #     sns.barplot(x='START TIME', y='CAPACITY REMAINING (%)', hue='SOURCE',
-    #                 data=self.recent_usage_df.iloc[pos:pos + 24, :], ax=self.ax_recent_usage)
-    #     self.ax_recent_usage.set_title('Recent Battery Levels')
-    #     self.ax_recent_usage.set_xlabel('Time')
-    #     self.ax_recent_usage.set_ylabel('Capacity Remaining (%)')
-    #
-    #     # Change background color
-    #     self.ax_recent_usage.set_facecolor('#f0f0f0')  # Light grey background inside graph area
-    #     # self.canvas_recent_usage.figure.set_facecolor('#f0f0f0')  # Light grey background around graph area
-    #
-    #     tick_labels = self.ax_recent_usage.get_xticks()
-    #     tick_texts = pd.to_datetime(self.recent_usage_df['START TIME'].iloc[pos:pos + 24].values).strftime(
-    #         '%d/%m %H:%M')
-    #     self.ax_recent_usage.set_xticklabels(tick_texts, rotation=45, ha='right')
-    #
-    #     # Adjust layout
-    #     self.canvas_recent_usage.figure.tight_layout()
-    #
-    #     self.canvas_recent_usage.draw_idle()
-    #     self.canvas_recent_usage.flush_events()
+        self.sl.setValue(len(df_resampled) - self.hours_to_show)
 
     def update_recent_usage(self):
+        self.recent_usage_clear_axes()
         self.recent_usage_chart.removeAllSeries()
-        self.clear_axes(self.recent_usage_chart, self.recent_usage_current_axes)
 
         pos = int(self.sl.value())
 
-        # Get unique sources and ensure they are strings
-        unique_sources = self.recent_usage_df['SOURCE'].astype(str).unique()
-
-        # Create a dictionary to hold QBarSet for each source
-        bar_sets = {source: QBarSet(str(source)) for source in unique_sources}
-
-        # Populate bar sets
-        for i in range(pos, pos + 24):
-            source = self.recent_usage_df['SOURCE'].iloc[i]
-            capacity = self.recent_usage_df['CAPACITY REMAINING (%)'].iloc[i]
-            bar_sets[source].append(capacity)
-
         # Create bar series and add bar sets
         bar_series = QBarSeries()
-        for bar_set in bar_sets.values():
-            bar_series.append(bar_set)
+
+        bar_set = QBarSet("")
+        x_labels = []
+
+        # Populate bar sets
+        for i in range(pos, pos + self.hours_to_show):
+            time = self.recent_usage_df['START TIME'].iloc[i].strftime("%H:%M")
+
+            capacity = self.recent_usage_df['CAPACITY REMAINING (%)'].iloc[i]
+
+            bar_set.append(capacity)
+
+            x_labels.append(time)
+
+        bar_set.setLabel(self.recent_usage_df['START TIME'].iloc[pos + self.hours_to_show - 1].strftime("%m/%d"))
+
+        # for i, bar in enumerate(bar_set):
+        #     source = self.recent_usage_df['SOURCE'].astype(str).iloc[i]
+        #
+        #     if source == 'AC':
+        #         bar_set.setColor(Qt.GlobalColor.green)
+        #     elif source == 'Battery':
+        #         bar_set.setColor(Qt.GlobalColor.blue)
+        #     else:
+        #         bar_set.setColor(Qt.GlobalColor.yellow)
+
+        bar_series.append(bar_set)
 
         self.recent_usage_chart.addSeries(bar_series)
-        # self.recent_usage_chart.createDefaultAxes()
+        # self.recent_usage_chart.setAnimationOptions(QChart.AnimationOption.SeriesAnimations)
 
         # Create and customize x-axis as QDateTimeAxis
-        axis_x = QDateTimeAxis()
+        axis_x = QBarCategoryAxis()
         axis_x.setTitleText("Time")
-        axis_x.setFormat("dd-MM HH:mm")
         axis_x.setLabelsAngle(-45)
-        axis_x.setTickCount(6)  # Adjust number of ticks as needed
+        axis_x.append(x_labels)
 
         # Create and customize y-axis as QValueAxis
         axis_y = QValueAxis()
+        axis_y.setRange(0, 100)
         axis_y.setTitleText("Capacity Remaining (%)")
 
         self.recent_usage_chart.addAxis(axis_x, Qt.AlignmentFlag.AlignBottom)
@@ -764,11 +756,6 @@ class MainWindow(QMainWindow):
         self.recent_usage_chart.setTitle('Recent Battery Levels')
         self.recent_usage_chart.setBackgroundBrush(QColor("#f0f0f0"))
         self.recent_usage_chart.setTitleFont(QFont("Arial", 14, QFont.Weight.Bold))
-
-        # Set x-axis range
-        start_time = self.recent_usage_df['START TIME'].iloc[pos]
-        end_time = self.recent_usage_df['START TIME'].iloc[pos + 23]
-        axis_x.setRange(start_time, end_time)
 
         # Add axes to current_axes list
         self.recent_usage_current_axes.extend([axis_x, axis_y])
